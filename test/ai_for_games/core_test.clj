@@ -2,6 +2,64 @@
   (:require [clojure.test :refer :all]
             [ai-for-games.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest moving-in-the-field
+  (testing "Top left moves one row up and one further inward"
+    ;; at the edges
+    (is (nil? (neighbor-idx 0 :top-left)))
+    (is (nil? (neighbor-idx 8 :top-left)))
+    (is (nil? (neighbor-idx 17 :top-left)))
+    ;; in the field
+    (is (= 4 (neighbor-idx 12 :top-left)))
+    (is (= 5 (neighbor-idx 13 :top-left)))
+    (is (= 8 (neighbor-idx 16 :top-left)))
+    (is (= 68 (neighbor-idx 76 :top-left))))
+
+  (testing "Top right moves one further inward"
+    ;; at the edges
+    (is (nil? (neighbor-idx 8 :top-right)))
+    (is (nil? (neighbor-idx 17 :top-right)))
+    ;; in the field
+    (is (= 5 (neighbor-idx 4 :top-right)))
+    (is (= 37 (neighbor-idx 36 :top-right)))
+    (is (= 73 (neighbor-idx 72 :top-right))))
+
+  (testing "Left takes the one that is \"above\" in our representation"
+    ;; at the edges
+    (is (nil? (neighbor-idx 0 :left)))
+    (is (nil? (neighbor-idx 8 :left)))
+    ;; in the field
+    (is (= 4 (neighbor-idx 13 :left)))
+    (is (= 8 (neighbor-idx 17 :left)))
+    (is (= 67 (neighbor-idx 76 :left))))
+
+  (testing "Right is one below, one further inward"
+    ;; at the edges
+    (is (nil? (neighbor-idx 8 :right)))
+    (is (nil? (neighbor-idx 44 :right)))
+    (is (nil? (neighbor-idx 72 :right)))
+    ;; in the field
+    (is (= 14 (neighbor-idx 4 :right)))
+    (is (= 46 (neighbor-idx 36 :right)))
+    (is (= 52 (neighbor-idx 42 :right))))
+
+  (testing "Bottom left is one further outward"
+    ;; at the edges
+    (is (nil? (neighbor-idx 0 :bottom-left)))
+    (is (nil? (neighbor-idx 36 :bottom-left)))
+    (is (nil? (neighbor-idx 72 :bottom-left)))
+    ;; in the field
+    (is (= 7 (neighbor-idx 8 :bottom-left)))
+    (is (= 43 (neighbor-idx 44 :bottom-left)))
+    (is (= 75 (neighbor-idx 76 :bottom-left))))
+
+  (testing "Bottom right is one below"
+    ;; at the edges
+    (is (nil? (neighbor-idx 72 :bottom-right)))
+    (is (nil? (neighbor-idx 76 :bottom-right)))
+    ;; in the field
+    (is (= 13 (neighbor-idx 4 :bottom-right)))
+    (is (= 17 (neighbor-idx 8 :bottom-right)))
+    (is (= 45 (neighbor-idx 36 :bottom-right)))
+    (is (= 72 (neighbor-idx 63 :bottom-right)))
+    (is (= 76 (neighbor-idx 67 :bottom-right)))
+    ))
