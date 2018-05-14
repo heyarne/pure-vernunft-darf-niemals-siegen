@@ -61,5 +61,22 @@
     (is (= 17 (neighbor-idx 8 :bottom-right)))
     (is (= 45 (neighbor-idx 36 :bottom-right)))
     (is (= 72 (neighbor-idx 63 :bottom-right)))
-    (is (= 76 (neighbor-idx 67 :bottom-right)))
-    ))
+    (is (= 76 (neighbor-idx 67 :bottom-right)))))
+
+(deftest valid-moves
+  (testing "A non-existing cell is not a valid move"
+    (is (false? (valid-move? nil :g))))
+  (testing "A cell with two stones on it is not a valid move"
+    (is (false? (valid-move? [:r :r] :b))))
+  (testing "A cell with a player's stone already on it is not a valid move"
+    (is (false? (valid-move? [:r] :r)))
+    (is (false? (valid-move? [:g] :g)))
+    (is (false? (valid-move? [:b] :b))))
+  (testing "An empty cell is a valid move"
+    (is (true? (valid-move? [] :r)))
+    (is (true? (valid-move? [] :g)))
+    (is (true? (valid-move? [] :b))))
+  (testing "A cell with another player's stone on it is a valid move"
+    (is (true? (valid-move? [:r] :g)))
+    (is (true? (valid-move? [:g] :b)))
+    (is (true? (valid-move? [:b] :r)))))

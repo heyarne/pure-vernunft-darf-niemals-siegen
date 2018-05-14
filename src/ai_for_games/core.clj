@@ -85,6 +85,13 @@
   (when-let [n-idx (neighbor-idx idx direction)]
     (nth board n-idx)))
 
+(defn valid-move?
+  "Checks a cell to see whether we can move there"
+  [cell player]
+  (and (not (nil? cell))
+       (not (= 2 (count cell)))
+       (not (some #{player} cell))))
+
 (defn possible-moves
   "Gives us all possible moves"
   [board idx player])
