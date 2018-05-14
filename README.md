@@ -1,36 +1,49 @@
 # ai-for-games
 
-FIXME: description
+This is an attempt at solving the HTW IMI Master course "AI for Games and Interactive Systems" with Clojure. We'll see how that works out.
 
 ## Installation
 
-Download from http://example.com/FIXME.
+You need [leiningen](https://leiningen.org/) to build this. You should check the leiningen webpage for instructions how to install it.
 
 ## Usage
 
-FIXME: explanation
+First start the server that is provided in the course:
 
-    $ java -jar ai-for-games-0.1.0-standalone.jar [args]
+```
+$ java -Djava.library.path=resources/gawihs/lib/native -jar resources/gawihs/gawihs.jar
+```
+
+Afterwards you can run the clients like so:
+
+```
+$ lein run
+```
+
+The server should output something along those lines:
+
+```
+Start with 3 integer parameters: <window width> <window height> [<time limit to send move in seconds>] [noanim]
+	defaults: 1200 880 8
+Server listening on 192.168.0.11:22135
+Server waiting for 3 connections...
+Incoming connection from 127.0.0.1
+Welcome 
+ successfully connected
+Server waiting for 2 connections...
+Incoming connection from 127.0.0.1
+Welcome 
+ successfully connected
+Server waiting for 1 connections...
+Incoming connection from 127.0.0.1
+Welcome 
+ successfully connected
+Press <space> to start the game...
+```
+
+**NOTE:** This will very likely change in the future.
 
 ## Options
 
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
-
-## License
-
-Copyright © 2018 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+**TODO:** Add CLI options
+ 
