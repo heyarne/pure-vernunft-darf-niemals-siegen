@@ -46,10 +46,9 @@
 (defn on-top?
   "Predicate to tell whether a player is on top in a given cell"
   [cell player]
-  (or (= [player] cell)
-      (= player (last cell))))
+  (= player (first cell)))
 
-(defn move-indices
+(defn valid-starts
   "Gives us indices of cells that can be used as a starting point for moves"
   [board player]
   (keep-indexed (fn [idx cell]

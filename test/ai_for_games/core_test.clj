@@ -2,6 +2,14 @@
   (:require [clojure.test :refer :all]
             [ai-for-games.core :refer :all]))
 
+(def board' @board) ; < non-changing copy of the initial game state
+
+(deftest all-allowed-starts
+  (testing "An allowed start is every cell where the player is on top"
+    (is (= [4 12 20 28 36] (allowed-starts board' :g)))
+    (is (= [8 17 26 35 44] (allowed-starts board' :b)))
+    (is (= [72 73 74 75 76] (allowed-starts board' :r)))))
+
 (deftest moving-in-the-field
   (testing "Top left moves one row up and one further inward"
     ;; at the edges
