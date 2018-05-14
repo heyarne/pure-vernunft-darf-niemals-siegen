@@ -2,6 +2,8 @@
 
 This is an attempt at solving the HTW IMI Master course "AI for Games and Interactive Systems" with Clojure. We'll see how that works out.
 
+[![Pure Vernunft Darf Niemals Siegen](https://img.youtube.com/vi/e1szcpyzsAE/0.jpg)](https://www.youtube.com/watch?v=e1szcpyzsAE)
+
 ## Installation
 
 You need [leiningen](https://leiningen.org/) to build this. You should check the leiningen webpage for instructions how to install it.
