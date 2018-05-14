@@ -6,9 +6,9 @@
 
 (deftest all-allowed-starts
   (testing "An allowed start is every cell where the player is on top"
-    (is (= [4 12 20 28 36] (allowed-starts board' :g)))
-    (is (= [8 17 26 35 44] (allowed-starts board' :b)))
-    (is (= [72 73 74 75 76] (allowed-starts board' :r)))))
+    (is (= [4 12 20 28 36] (valid-starts board' :g)))
+    (is (= [8 17 26 35 44] (valid-starts board' :b)))
+    (is (= [72 73 74 75 76] (valid-starts board' :r)))))
 
 (deftest moving-in-the-field
   (testing "Top left moves one row up and one further inward"

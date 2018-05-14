@@ -45,6 +45,10 @@ Press <space> to start the game...
 
 **NOTE:** This will very likely change in the future.
 
+## Tests
+
+There are quite a couple of tests in `./test`. You can run them with `lein test`.
+
 ## Options
 
 **TODO:** Add CLI options
