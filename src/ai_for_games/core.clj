@@ -6,10 +6,10 @@
   (:gen-class))
 
 ;; NOTE: :r, :g, :b in the order of player 1, 2 and 3
-;; NOTE: Not allowed to move onto own field
 
 ;; TODO: Genetic algorithm
 ;; TODO: Race so that we always finish in time (one thread counts down, one thread gives as many results as possible)
+;; TODO: Make sure -main can take two args, server and port
 
 (def per-row 9)
 
@@ -46,7 +46,7 @@
 (defn on-top?
   "Predicate to tell whether a player is on top in a given cell"
   [cell player]
-  (= player (first cell)))
+  (= player (last cell)))
 
 (defn valid-starts
   "Gives us indices of cells that can be used as a starting point for moves"
@@ -80,9 +80,10 @@
                       (+ idx per-row)))))
 
 (defn neighbor
+  "Returns a neighbor as a cell and the corresponding index"
   [board idx direction]
   (when-let [n-idx (neighbor-idx idx direction)]
-    (nth board n-idx)))
+    [n-idx (nth board n-idx)]))
 
 (defn valid-move?
   "Checks a cell to see whether we can move there"
@@ -93,13 +94,28 @@
 
 (defn possible-moves
   "Gives us all possible moves"
-  [board idx player])
+  [board idx player]
+  (->>
+   ;; get all neighbors
+   (map #(neighbor board idx %) directions)
+   ;; keep only those that we can go to
+   (filter (fn [[n-idx cell]]
+             (valid-move? cell :player)))
+   ;; ... and give them a nice representation
+   (map (fn [[n-idx cell]]
+          {:from idx :to n-idx}))))
 
-#_(defn accessible?
-  "Can we enter a cell?"
-  [cell]
-  (and (not (nil? cell))
-       (< (count cell) 2)))
+(defn apply-move
+  "Given a valid move, returns the board with this move applied"
+  [board move]
+  (let [from (let [from' (pop (nth board (move :from)))]
+               (if (empty? from') nil from'))
+        to (conj (nth board (move :to)) (peek (nth board (move :from))))]
+    (-> board
+        (assoc (move :from) from)
+        (assoc (move :to) to))))
+
+;; logic for actually connecting to the server and interacting with it
 
 (def icons (map #(str "resources/icons/" % ".png") ["aperture", "bolt", "bug"]))
 
@@ -112,6 +128,8 @@
     (if-let [move (.receiveMove client)]
       (println "I should update, received move" (bean move))
       (println "I should make a move"))))
+
+;; the function that will be invoked when calling the command line script
 
 (defn -main
   [& args]

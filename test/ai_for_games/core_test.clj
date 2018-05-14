@@ -88,3 +88,13 @@
     (is (true? (valid-move? [:r] :g)))
     (is (true? (valid-move? [:g] :b)))
     (is (true? (valid-move? [:b] :r)))))
+
+(deftest move-making
+  (let [board (apply-move board' {:from 4 :to 5})]
+    (testing "A cell disappears when empty after a move"
+      (is (nil? (nth board 4))))
+    (testing "A stone should be added to an empty field"
+      (is (= [:g] (nth board 5)))))
+  (testing "A stone should be put on top a non-empty field"
+    (let [board (apply-move [[:r] [:b]] {:from 1 :to 0})]
+      (is (on-top? (first board) :b)))))
