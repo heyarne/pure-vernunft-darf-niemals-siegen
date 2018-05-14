@@ -1,0 +1,48 @@
+* Spielbäume
+
+[...]
+
+** Keine Blätter - Kein Sinn?
+
+- Spielbäume häufig zu groß, um sie komplett auszurechnen / abspeichern
+- Ansatz: Symmetrien auswechseln (beim Schach können die hälfte der Konfigurationen wiederverwendet werden, da egal ob schwarzer / weißer Spieler)
+- Ansonsten: Bewertungsfunktion; heißt, dass *Konfigurationen* (nicht Züge) in ihrer Attraktivität bewertet werden
+
+** Minimax-Algorithmus
+
+- Im Prinzip Breitensuche
+- Vorberechnen von momentanem Spielstand, so weit wie möglich (alles im Speicher)
+- Ausgehend von Blättern des Baumes
+- Wir sind Kreis, Gegner Quadrat
+- Baum wird berechnet ausgehend von momentaner Konfiguration
+- Beispiel unten links: Zwei Konfigurationen, 10 Punkte und Unendlich Punkte (Unendlich = wir haben gewonnen)
+- Für Gegner (eine ebene darüber) erstrebenswerter, wenn wir nicht gewonnen haben, also nimmt er den Zug mit 10
+- Gegner minimiert Bewertung, wir maximieren
+
+** Negamax
+
+- Idee: Man multipliziert einfach mit -1, statt pro Zug zwischen Minimum und Maximum zu unterscheiden
+
+** Alpha-Beta-Suche
+
+(wieder anhand des Diagramms)
+
+- Tiefensuche von rechts nach links; das heißt man hat für rechte hälfte bereits -7
+- Rechnet danach die rechte Hälfte des linken Teilbaums, erhält -10
+- Man weiß, dass Gegner zum für mich schlechteren Ergebnis tendieren würde - meine beste Möglichkeit für den linken Baum sind also bisher -10 mein bestmögliches Ergebnis
+- Der Rest ist also egal; ich nehme den Zug, der in den rechten Teilbaum führt
+
+Zweites, eckiges Diagramm:
+
+- Die Zahlen neben errechnetem Wert bedeuten bestmögliches bereits errechnetes Ergebnis für den Gegner / für mich
+- Beispiel unten links: Meine Entscheidung ist 10; danach Möglichkeit mit 12; die Kinder von 12 muss ich mir nicht anschauen, weil der Gegner diesen Pfad nicht gehen würde.
+- wegschneiden entweder größer als beta oder kleiner als alpha
+
+** Effizienzvergleich
+
+- Wie viel man berechnet hängt von Reihenfolge des Aufbaus des Spielbaums abspeichern
+- vgl Minimax-Diagramm: Bei Alpha-Beta von links wird nichts abgeschnitten, bei rechts schon
+
+** Unterschiede für unser Spiel
+
+- 3 Spieler statt zwei; Wie lässt sich das auf alpha-beta übertragen?
