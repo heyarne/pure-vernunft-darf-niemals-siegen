@@ -1,4 +1,4 @@
-# ai-for-games
+# ai-for-games [![Build Status](https://travis-ci.org/heyarne/pure-vernunft-darf-niemals-siegen.svg?branch=master)](https://travis-ci.org/heyarne/pure-vernunft-darf-niemals-siegen)
 
 This is an attempt at solving the HTW IMI Master course "AI for Games and Interactive Systems" with Clojure. We'll see how that works out.
 
