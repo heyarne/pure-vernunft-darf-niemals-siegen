@@ -86,7 +86,10 @@
     (is (true? (valid-move? [] :b))))
   (testing "A cell with another player's stone on it is a valid move"
     (is (true? (valid-move? [:r] :g)))
+    (is (true? (valid-move? [:b] :g)))
     (is (true? (valid-move? [:g] :b)))
+    (is (true? (valid-move? [:r] :b)))
+    (is (true? (valid-move? [:g] :r)))
     (is (true? (valid-move? [:b] :r)))))
 
 (deftest move-making
