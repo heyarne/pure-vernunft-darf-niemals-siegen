@@ -55,7 +55,7 @@
                   (when (on-top? cell player) idx))
                 board))
 
-(def directions [:top-left :top-right :left :bottom-left :bottom-right])
+(def directions [:top-left :top-right :left :right :bottom-left :bottom-right])
 
 (defn neighbor-idx
   "Returns the neighboring index in a given direction or nil if the neighbor is
