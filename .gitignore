@@ -4,6 +4,7 @@
 pom.xml
 pom.xml.asc
 *.jar
+!/resources/gawihs/gawihs.jar
 *.class
 /.lein-*
 /.nrepl-port
