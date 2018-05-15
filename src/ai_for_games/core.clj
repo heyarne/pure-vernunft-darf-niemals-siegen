@@ -13,10 +13,10 @@
 
 (def per-row 9)
 
-;; the board is a 6x6 hexagonal grid; [] is a field that's empty, [:green] has
-;; one green stone on it, [:green :red] has a green stone at the bottom and a
-;; red stone on top and nil is a non-existant cell (either it disappeared or
-;; it wasn't there to begin with)
+;; the board is a hexagonal grid with edges of length 5; [] is a field that's
+;; empty, [:g] has one green stone on it, [:g :r] has a green stone at the top
+;; and a red stone on top and nil is a non-existant cell (either it disappeared
+;; or it wasn't there to begin with)
 
 (def board (atom [nil  nil  nil  nil  [:g] []   []   []   [:b]
                   nil  nil  nil  [:g] []   []   []   []   [:b]
@@ -92,8 +92,8 @@
        (not (= 2 (count cell)))
        (not (some #{player} cell))))
 
-(defn possible-moves
-  "Gives us all possible moves"
+(defn moves-from-cell
+  "Gives us all possible moves for a cell"
   [board idx player]
   (->>
    ;; get all neighbors
@@ -105,6 +105,13 @@
    (map (fn [[n-idx cell]]
           {:from idx :to n-idx}))))
 
+(defn all-moves
+  "Gives us all possible moves for a player"
+  [board player]
+  (->>
+   (valid-starts board player)
+   (mapcat #(moves-from-cell board % player))))
+
 (defn apply-move
   "Given a valid move, returns the board with this move applied"
   [board move]
@@ -114,6 +121,24 @@
     (-> board
         (assoc (move :from) from)
         (assoc (move :to) to))))
+
+;; now we can implement different players that behave accordingly
+
+(defrecord Player [color strategy])
+
+(defmulti pick-move
+  "Decides which move gets picked, based on the strategy of a player"
+  (fn [_ player] (:strategy player)))
+
+(defmethod pick-move :random [board player]
+  (rand-nth (all-moves board (:color player))))
+
+(comment
+  ;; now we can pick a move like this:
+  (let [player (map->Player {:color :g
+                             :strategy :random})]
+    (pick-move @board player))
+  )
 
 ;; logic for actually connecting to the server and interacting with it
 
