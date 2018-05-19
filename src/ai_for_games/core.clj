@@ -1,12 +1,15 @@
 (ns ai-for-games.core
   (:require [clojure.string :as str])
   (:import [lenz.htw.gawihs.net NetworkClient]
+           [lenz.htw.gawihs Move]
            [javax.imageio ImageIO]
            [java.io File])
   (:gen-class))
 
 ;; NOTE: :r, :g, :b in the order of player 1, 2 and 3
 
+;; TODO: It's confusing to have colors and numbers representing players :/
+;; TODO: Players get disqualified if they don't make a move in time
 ;; TODO: Genetic algorithm
 ;; TODO: Race so that we always finish in time (one thread counts down, one thread gives as many results as possible)
 ;; TODO: Make sure -main can take two args, server and port
@@ -115,8 +118,8 @@
 (defn apply-move
   "Given a valid move, returns the board with this move applied"
   [board move]
-  (let [from (let [from' (pop (nth board (move :from)))]
-               (if (empty? from') nil from'))
+  (let [from (let [from (pop (nth board (move :from)))]
+               (when-not (empty? from) from))
         to (conj (nth board (move :to)) (peek (nth board (move :from))))]
     (-> board
         (assoc (move :from) from)
@@ -124,7 +127,13 @@
 
 ;; now we can implement different players that behave accordingly
 
-(defrecord Player [color strategy])
+(defrecord Player [n color strategy])
+
+(defn player
+  "Given a player number and an optional strategy, creates a player"
+  ([n] (player n :random))
+  ([n strategy] (let [colors [:r :g :b]]
+                  (->Player n (nth colors n) strategy))))
 
 (defmulti pick-move
   "Decides which move gets picked, based on the strategy of a player"
@@ -134,9 +143,8 @@
   (rand-nth (all-moves board (:color player))))
 
 (comment
-  ;; now we can pick a move like this:
-  (let [player (map->Player {:color :g
-                             :strategy :random})]
+  ;; now we can pick a move for player red like this:
+  (let [player (player 0)]
     (pick-move @board player))
   )
 
@@ -144,19 +152,62 @@
 
 (def icons (map #(str "resources/icons/" % ".png") ["aperture", "bolt", "bug"]))
 
-(defn connect! []
-  (let [icon (ImageIO/read (File. (rand-nth icons)))
-        client (NetworkClient. nil "" icon)]
-    (println "Player number" (.getMyPlayerNumber client)
-             "Time limit" (.getTimeLimitInSeconds client)
-             "Latency" (.getExpectedNetworkLatencyInMilliseconds client))
-    (if-let [move (.receiveMove client)]
-      (println "I should update, received move" (bean move))
-      (println "I should make a move"))))
+(defn send-move!
+  "Sends a move to the client"
+  [client move]
+  (let [[from-x from-y] (:from move)
+        [to-x to-y] (:to move)]
+    (.sendMove client (Move. from-x from-y to-x to-y))))
+
+(defn get-move!
+  "A small helper to make a `Move` nicer to work with"
+  [client]
+  (when-let [m (.receiveMove client)]
+    {:from [(.fromX m) (.fromY m)]
+     :to [(.toX m) (.toY m)]}))
+
+(defn game-ended?
+  "The client receives an invalid move when the game has ended"
+  [move]
+  (= move {:from [0 -1] :to [0 -1]}))
+
+(def is-printing? (atom false))
+
+(defn println+
+  "A synchronized println"
+  [& args]
+  (loop []
+    (dosync
+     (if-not @is-printing?
+       (do (swap! is-printing? not)
+               (apply println args)
+               (swap! is-printing? not))
+       (recur)))))
+
+(defn connect! [host team icon-path]
+  (let [icon (ImageIO/read (File. icon-path))
+        client (NetworkClient. host team icon)
+        n (.getMyPlayerNumber client)
+        p (player n)
+        ;; TODO: Something with these two ↓
+        time-limit (.getTimeLimitInSeconds client)
+        latency (.getExpectedNetworkLatencyInMilliseconds client)]
+    (println+ "Player number" n "Time limit" time-limit "Latency" latency)
+    (println+ "move for" n " " (get-move! client))
+    #_(loop [move (get-move! client)]
+      (println+ "Got move for " n " - " move)
+      (when-not (game-ended? move)
+        (if (nil? move)
+          (println+ "I'm player " p " and it's my turn")
+          (println+ "Got move!" move))
+        (recur (get-move! client))))
+    (println+ "Game over")))
 
 ;; the function that will be invoked when calling the command line script
 
 (defn -main
   [& args]
   (doall
-   (map (fn [_] (future (connect!))) (range 3))))
+   (map #(future
+           (connect! nil (str "Player " (inc %)) (nth icons %)))
+        (range 3))))
