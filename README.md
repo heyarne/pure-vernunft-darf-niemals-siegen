@@ -10,10 +10,10 @@ You need [leiningen](https://leiningen.org/) to build this. You should check the
 
 ## Usage
 
-First start the server that is provided in the course:
+First start the server:
 
 ```
-$ java -Djava.library.path=resources/gawihs/lib/native -jar resources/gawihs/gawihs.jar
+$ ./run-server.sh
 ```
 
 Afterwards you can run the clients like so:
