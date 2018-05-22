@@ -21,15 +21,15 @@
 ;; and a red stone on top and nil is a non-existant cell (either it disappeared
 ;; or it wasn't there to begin with)
 
-(def board (atom [nil  nil  nil  nil  [:g] []   []   []   [:b]
-                  nil  nil  nil  [:g] []   []   []   []   [:b]
-                  nil  nil  [:g] []   []   []   []   []   [:b]
-                  nil  [:g] []   []   []   []   []   []   [:b]
-                  [:g] []   []   []   nil  []   []   []   [:b]
-                  []   []   []   []   []   []   []   []   nil
-                  []   []   []   []   []   []   []   nil  nil
+(def board (atom [[:r] [:r] [:r] [:r] [:r] nil  nil  nil  nil
                   []   []   []   []   []   []   nil  nil  nil
-                  [:r] [:r] [:r] [:r] [:r] nil  nil  nil  nil]))
+                  []   []   []   []   []   []   []   nil  nil
+                  []   []   []   []   []   []   []   []   nil
+                  [:g] []   []   []   nil  []   []   []   [:b]
+                  nil  [:g] []   []   []   []   []   []   [:b]
+                  nil  nil  [:g] []   []   []   []   []   [:b]
+                  nil  nil  nil  [:g] []   []   []   []   [:b]
+                  nil  nil  nil  nil  [:g] []   []   []   [:b]]))
 
 (defn print-board!
   "Prints a nice human-readable output of the current board to System.out (useful
@@ -58,35 +58,34 @@
                   (when (on-top? cell player) idx))
                 board))
 
-(def directions [:top-left :top-right :left :right :bottom-left :bottom-right])
+(defn coord->idx
+  "The game uses two-dimensional indices, we have the array unrolled. Translates
+  from coordinate to index."
+  [[x y]]
+  (+ (* y per-row) x))
 
-(defn neighbor-idx
-  "Returns the neighboring index in a given direction or nil if the neighbor is
-  not part of the board"
-  [idx direction]
-  (let [right-most (dec per-row)
-        left-most 0]
-    (case direction
-      :top-left (when (and (> idx per-row)
-                           (< left-most (mod idx per-row) right-most))
-                  (inc (- idx per-row)))
-      :top-right (when (< (mod idx per-row) right-most)
-                   (inc idx))
-      :left (when (> idx per-row)
-              (- idx per-row))
-      :right (when (and (< idx (* per-row (dec per-row)))
-                        (< (mod idx per-row) right-most))
-               (inc (+ idx per-row)))
-      :bottom-left (when (> (mod idx per-row) left-most)
-                     (dec idx))
-      :bottom-right (when (< idx (* per-row (dec per-row)))
-                      (+ idx per-row)))))
+(defn idx->coord
+  "The game uses two-dimensional indices, we have the array unrolled. Translates
+  from index to coordinate."
+  [idx]
+  (let [x (mod idx per-row)]
+    [x (/ (- idx x) per-row)]))
+
+(def directions [:left :top-left :top-right :right :bottom-left :bottom-right])
 
 (defn neighbor
-  "Returns a neighbor as a cell and the corresponding index"
-  [board idx direction]
-  (when-let [n-idx (neighbor-idx idx direction)]
-    [n-idx (nth board n-idx)]))
+  "Returns a neighbor as a cell and the corresponding coordinates"
+  [board [x y] direction]
+  (let [cell-coord (case direction
+                     :left [(dec x) y]
+                     :top-left [x (inc y)]
+                     :top-right [(inc x) (inc y)]
+                     :right [(inc x) y]
+                     :bottom-right [x (dec y)]
+                     :bottom-left [(dec x) (dec y)])]
+    (when (and (not-any? neg? cell-coord)
+               (not-any? #(>= % per-row) cell-coord))
+      [cell-coord (nth board (coord->idx cell-coord))])))
 
 (defn valid-move?
   "Checks a cell to see whether we can move there"
@@ -97,16 +96,16 @@
 
 (defn moves-from-cell
   "Gives us all possible moves for a cell"
-  [board idx player]
+  [board coord player]
   (->>
    ;; get all neighbors
-   (map #(neighbor board idx %) directions)
+   (map #(neighbor board coord %) directions)
    ;; keep only those that we can go to
-   (filter (fn [[n-idx cell]]
-             (valid-move? cell :player)))
+   (filter (fn [[cell-coord cell]]
+             (valid-move? cell player)))
    ;; ... and give them a nice representation
-   (map (fn [[n-idx cell]]
-          {:from idx :to n-idx}))))
+   (map (fn [[cell-coord cell]]
+          {:from coord :to cell-coord}))))
 
 (defn all-moves
   "Gives us all possible moves for a player"
@@ -118,12 +117,21 @@
 (defn apply-move
   "Given a valid move, returns the board with this move applied"
   [board move]
-  (let [from (let [from (pop (nth board (move :from)))]
+  (let [move' {:from (coord->idx (:from move))
+               :to (coord->idx (:to move))}
+        from (let [from (pop (nth board (:from move')))]
                (when-not (empty? from) from))
-        to (conj (nth board (move :to)) (peek (nth board (move :from))))]
+        to (conj (nth board (:to move'))
+                 (peek (nth board (:from move'))))]
     (-> board
-        (assoc (move :from) from)
-        (assoc (move :to) to))))
+        (assoc (:from move') from)
+        (assoc (:to move') to))))
+
+(pop (nth @board 36))
+(nth @board 37)
+
+
+(print-board! (assoc @board 36 nil))
 
 ;; now we can implement different players that behave accordingly
 
@@ -131,13 +139,17 @@
 
 (defn player
   "Given a player number and an optional strategy, creates a player"
-  ([n] (player n :random))
+  ([n] (player n :bottom-left))
   ([n strategy] (let [colors [:r :g :b]]
                   (->Player n (nth colors n) strategy))))
 
 (defmulti pick-move
   "Decides which move gets picked, based on the strategy of a player"
   (fn [_ player] (:strategy player)))
+
+(defmethod pick-move :bottom-left [board player]
+  ;; this just moves the first stone up, useful for debugging
+  {:from [0 0] :to [1 1]})
 
 (defmethod pick-move :random [board player]
   (rand-nth (all-moves board (:color player))))
@@ -158,6 +170,8 @@
   (let [[from-x from-y] (:from move)
         [to-x to-y] (:to move)]
     (.sendMove client (Move. from-x from-y to-x to-y))))
+
+;; TODO: Use the server coordinates
 
 (defn get-move!
   "A small helper to make a `Move` nicer to work with"
@@ -180,8 +194,8 @@
     (dosync
      (if-not @is-printing?
        (do (swap! is-printing? not)
-               (apply println args)
-               (swap! is-printing? not))
+           (apply println args)
+           (swap! is-printing? not))
        (recur)))))
 
 (defn connect! [host team icon-path]
@@ -193,12 +207,15 @@
         time-limit (.getTimeLimitInSeconds client)
         latency (.getExpectedNetworkLatencyInMilliseconds client)]
     (println+ "Player number" n "Time limit" time-limit "Latency" latency)
-    (println+ "move for" n " " (get-move! client))
-    #_(loop [move (get-move! client)]
+    (loop [move (get-move! client)]
       (println+ "Got move for " n " - " move)
       (when-not (game-ended? move)
         (if (nil? move)
-          (println+ "I'm player " p " and it's my turn")
+          (do
+            (let [m (pick-move @board p)]
+              (println+ "I'm player " p " and it's my turn"
+                        "My move will be " m)
+              #_(send-move! client (pick-move @board p))))
           (println+ "Got move!" move))
         (recur (get-move! client))))
     (println+ "Game over")))
