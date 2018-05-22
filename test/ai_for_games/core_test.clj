@@ -47,8 +47,6 @@
 (def board'
   (apply-move @board {:from [0 4] :to [1 4]}))
 
-(print-board! board')
-
 (deftest move-making
   (let [board (apply-move @board {:from [0 4] :to [1 4]})]
     (testing "A cell disappears when empty after a move"

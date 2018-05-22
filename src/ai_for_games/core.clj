@@ -127,12 +127,6 @@
         (assoc (:from move') from)
         (assoc (:to move') to))))
 
-(pop (nth @board 36))
-(nth @board 37)
-
-
-(print-board! (assoc @board 36 nil))
-
 ;; now we can implement different players that behave accordingly
 
 (defrecord Player [n color strategy])
