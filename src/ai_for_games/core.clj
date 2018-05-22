@@ -8,8 +8,8 @@
 
 ;; NOTE: :r, :g, :b in the order of player 1, 2 and 3
 
-;; TODO: It's confusing to have colors and numbers representing players :/
 ;; TODO: Players get disqualified if they don't make a move in time
+;; TODO: Players also get disqualified when they make invalid moves
 ;; TODO: Genetic algorithm
 ;; TODO: Race so that we always finish in time (one thread counts down, one thread gives as many results as possible)
 ;; TODO: Make sure -main can take two args, server and port
@@ -104,16 +104,16 @@
 
 (defn moves-from-cell
   "Gives us all possible moves for a cell"
-  [board coord player]
+  [board from-coord player]
   (->>
    ;; get all neighbors which are not nil
-   (keep #(neighbor board coord %) directions)
+   (keep #(neighbor board from-coord %) directions)
    ;; keep only those that we can go to
    (filter (fn [[cell-coord cell]]
-             (valid-move? board cell-coord player)))
+             (valid-move? board {:from from-coord :to cell-coord} player)))
    ;; ... and give them a nice representation
    (map (fn [[cell-coord cell]]
-          {:from coord :to cell-coord}))))
+          {:from from-coord :to cell-coord}))))
 
 (defn all-moves
   "Gives us all possible moves for a player"
@@ -224,7 +224,6 @@
             (do
               (println+ "Got move!" move)
               (swap! board apply-move move)
-              (reset! making-move? false)
               (println+ (format-board @board))))
           (recur (get-move! client)))))
     (println+ "Game over")))
