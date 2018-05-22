@@ -88,20 +88,29 @@
 
 (defn valid-move?
   "Checks a cell to see whether we can move there"
-  [cell player]
-  (and (not (nil? cell))
-       (not (= 2 (count cell)))
-       (not (some #{player} cell))))
+  [board {:keys [from to]} player]
+  (let [cell (nth board (coord->idx to))]
+    (and
+     (not (nil? cell)) ;; does the cell exist?
+     (not (= 2 (count cell))) ;; is there still space?
+     (not (some #{player} cell)) ;; are we not occupying it yet?
+     ;; ... and is there one of our own stones next to the cell we're moving to?
+     (let [from-idx (coord->idx from)
+           board' (assoc board from-idx nil)
+           surrounding-stones (->> (keep (partial neighbor board' to) directions)
+                                   (mapcat second)
+                                   (set))]
+       (keyword? (surrounding-stones player))))))
 
 (defn moves-from-cell
   "Gives us all possible moves for a cell"
   [board coord player]
   (->>
-   ;; get all neighbors
-   (map #(neighbor board coord %) directions)
+   ;; get all neighbors which are not nil
+   (keep #(neighbor board coord %) directions)
    ;; keep only those that we can go to
    (filter (fn [[cell-coord cell]]
-             (valid-move? cell player)))
+             (valid-move? board cell-coord player)))
    ;; ... and give them a nice representation
    (map (fn [[cell-coord cell]]
           {:from coord :to cell-coord}))))
@@ -190,12 +199,11 @@
            (swap! is-printing? not))
        (recur)))))
 
-(def making-move? (atom false)) ; < lock used so only one move is applied at once
-
 (defn connect!
   "Starts the connection for a client and plays the game"
   [host team icon-path]
-  (let [icon (ImageIO/read (File. icon-path))
+  (let [board (atom @board) ; < every thread gets its own board. this makes reasoning a bit easier
+        icon (ImageIO/read (File. icon-path))
         client (NetworkClient. host team icon)
         n (.getMyPlayerNumber client)
         p (player n)
@@ -214,8 +222,6 @@
               (send-move! client (pick-move @board p)))
             ;; we should update our game state
             (do
-              (dosync (when-not @making-move?
-                        (reset! making-move? true)))
               (println+ "Got move!" move)
               (swap! board apply-move move)
               (reset! making-move? false)
@@ -253,5 +259,4 @@
   [& args]
   (dotimes [i 3]
     (future
-      (Thread/sleep (* 100 i))
-      (connect! nil (nth ["Red" "Green" "Blue"] i) (nth icons i)))))
+      (connect! nil "Pure Vernunft" (nth icons i)))))
