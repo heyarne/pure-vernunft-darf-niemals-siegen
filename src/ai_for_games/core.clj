@@ -17,9 +17,9 @@
 (def per-row 9)
 
 ;; the board is a hexagonal grid with edges of length 5; [] is a field that's
-;; empty, [:g] has one green stone on it, [:g :r] has a green stone at the top
-;; and a red stone on top and nil is a non-existant cell (either it disappeared
-;; or it wasn't there to begin with)
+;; empty, [:g] has one green stone on it, [:g :r] has a green stone a and a red
+;; stone on top and nil is a non-existant cell (either it disappeared or it
+;; wasn't there to begin with)
 
 (def board (atom [[:r] [:r] [:r] [:r] [:r] nil  nil  nil  nil
                   []   []   []   []   []   []   nil  nil  nil
