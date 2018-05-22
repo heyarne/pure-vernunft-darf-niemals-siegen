@@ -31,7 +31,7 @@
                   nil  nil  nil  [:g] []   []   []   []   [:b]
                   nil  nil  nil  nil  [:g] []   []   []   [:b]]))
 
-(defn print-board!
+(defn format-board
   "Prints a nice human-readable output of the current board to System.out (useful
   for debugging)"
   [board]
@@ -39,12 +39,11 @@
        (map (partial format "%-8s"))
        (partition per-row)
        (map str/join)
-       (str/join "\n")
-       (println)))
+       (str/join "\n")))
 
 (comment
   ;; this is how you use it:
-  (print-board! @board))
+  (println (format-board @board)))
 
 (defn on-top?
   "Predicate to tell whether a player is on top in a given cell"
@@ -112,6 +111,7 @@
   [board player]
   (->>
    (valid-starts board player)
+   (map idx->coord)
    (mapcat #(moves-from-cell board % player))))
 
 (defn apply-move
@@ -133,7 +133,7 @@
 
 (defn player
   "Given a player number and an optional strategy, creates a player"
-  ([n] (player n :bottom-left))
+  ([n] (player n :random))
   ([n strategy] (let [colors [:r :g :b]]
                   (->Player n (nth colors n) strategy))))
 
@@ -165,8 +165,6 @@
         [to-x to-y] (:to move)]
     (.sendMove client (Move. from-x from-y to-x to-y))))
 
-;; TODO: Use the server coordinates
-
 (defn get-move!
   "A small helper to make a `Move` nicer to work with"
   [client]
@@ -174,7 +172,7 @@
     {:from [(.fromX m) (.fromY m)]
      :to [(.toX m) (.toY m)]}))
 
-(defn game-ended?
+(defn invalid-move?
   "The client receives an invalid move when the game has ended"
   [move]
   (= move {:from [0 -1] :to [0 -1]}))
@@ -192,33 +190,68 @@
            (swap! is-printing? not))
        (recur)))))
 
-(defn connect! [host team icon-path]
+(def making-move? (atom false)) ; < lock used so only one move is applied at once
+
+(defn connect!
+  "Starts the connection for a client and plays the game"
+  [host team icon-path]
   (let [icon (ImageIO/read (File. icon-path))
         client (NetworkClient. host team icon)
         n (.getMyPlayerNumber client)
         p (player n)
-        ;; TODO: Something with these two ↓
+        ;; FIXME: For now we assume everybody picks a move in time.
         time-limit (.getTimeLimitInSeconds client)
         latency (.getExpectedNetworkLatencyInMilliseconds client)]
     (println+ "Player number" n "Time limit" time-limit "Latency" latency)
     (loop [move (get-move! client)]
-      (println+ "Got move for " n " - " move)
-      (when-not (game-ended? move)
-        (if (nil? move)
-          (do
-            (let [m (pick-move @board p)]
-              (println+ "I'm player " p " and it's my turn"
-                        "My move will be " m)
-              #_(send-move! client (pick-move @board p))))
-          (println+ "Got move!" move))
-        (recur (get-move! client))))
+      (if (invalid-move? move)
+        (println+ "Invalid move!" move)
+        (do
+          (if (nil? move)
+            ;; it's time to pick a move
+            (let [move (pick-move @board p)]
+              (println+ "Sending move" move)
+              (send-move! client (pick-move @board p)))
+            ;; we should update our game state
+            (do
+              (dosync (when-not @making-move?
+                        (reset! making-move? true)))
+              (println+ "Got move!" move)
+              (swap! board apply-move move)
+              (reset! making-move? false)
+              (println+ (format-board @board))))
+          (recur (get-move! client)))))
     (println+ "Game over")))
+
+;; below are some more helper functions for debugging
+
+(defn log->moves
+  "Parses log output into moves"
+  [log-output]
+  (->>
+   (re-seq #"\d+,\d+ -> \d+,\d+" log-output)
+   (map #(str/split % #" -> "))
+   (map (fn [m] (->> (mapcat #(str/split % #",") m)
+                     (map #(Long/parseLong %)))))
+   (map (fn [[a b c d]] {:from [a b] :to [c d]}))))
+
+(defn replay-game
+  "Given a board and some moves, returns the board after
+  all those moves are applied"
+  [board moves]
+  (println+ "Initial board config\n" (format-board board) "\n")
+  (loop [board board
+         moves moves]
+    (when (seq moves)
+      (println+ (str "Applying move" (first moves) "\n"
+                     (format-board (apply-move board (first moves)))))
+      (recur (apply-move board (first moves)) (rest moves)))))
 
 ;; the function that will be invoked when calling the command line script
 
 (defn -main
   [& args]
-  (doall
-   (map #(future
-           (connect! nil (str "Player " (inc %)) (nth icons %)))
-        (range 3))))
+  (dotimes [i 3]
+    (future
+      (Thread/sleep (* 100 i))
+      (connect! nil (nth ["Red" "Green" "Blue"] i) (nth icons i)))))
