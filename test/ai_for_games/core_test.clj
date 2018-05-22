@@ -61,9 +61,6 @@
     (is (true? (-> (set-cell @board [7 4] [:g])
                    (valid-move? {:from [8 4] :to [7 4]} :b))))))
 
-(def board'
-  (apply-move @board {:from [0 4] :to [1 4]}))
-
 (deftest move-making
   (let [board (apply-move @board {:from [0 4] :to [1 4]})]
     (testing "A cell disappears when empty after a move"
