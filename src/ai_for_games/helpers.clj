@@ -1,10 +1,10 @@
 (ns ai-for-games.helpers
+  "Some helper functions that ease debugging / working with the data structures."
   (:require [clojure.string :as str]
             [ai-for-games.core :as game]))
 
 (defn format-board
-  "Prints a nice human-readable output of the current board to System.out (useful
-  for debugging)"
+  "Prints a nice human-readable output of the current board to System.out"
   [board]
   (->> (map str board)
        (map (partial format "%-8s"))

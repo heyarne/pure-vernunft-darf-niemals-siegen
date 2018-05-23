@@ -3,6 +3,7 @@
   into commands to send over the network."
   (:require [clojure.tools.cli :refer [parse-opts]]
             [ai-for-games.core :as game]
+            [ai-for-games.player :as player]
             [ai-for-games.helpers :refer [println+ format-board]]
             [clojure.string :as str])
   (:import [lenz.htw.gawihs.net NetworkClient]
@@ -41,7 +42,7 @@
         icon (ImageIO/read (File. icon-path))
         client (NetworkClient. host team icon)
         n (.getMyPlayerNumber client)
-        p (game/player n)
+        p (player/player n)
         ;; FIXME: For now we assume everybody picks a move in time.
         time-limit (.getTimeLimitInSeconds client)
         latency (.getExpectedNetworkLatencyInMilliseconds client)]
@@ -52,7 +53,7 @@
         (do
           (if (nil? move)
             ;; it's time to pick a move
-            (let [move (game/pick-move @board p)]
+            (let [move (player/pick-move @board p)]
               (println+ "Sending move" move)
               (send-move! client move))
             ;; we should update our game state

@@ -1,5 +1,6 @@
 (ns ai-for-games.core
-  (:require [clojure.string :as str]))
+  "This module describes the core primitives: What does the board look like,
+  what are the rules, how do we make a move etc.")
 
 ;; NOTE: :r, :g, :b in the order of player 1, 2 and 3
 
@@ -7,7 +8,6 @@
 ;; TODO: Players also get disqualified when they make invalid moves
 ;; TODO: Genetic algorithm
 ;; TODO: Race so that we always finish in time (one thread counts down, one thread gives as many results as possible)
-;; TODO: Make sure -main can take two args, server and port
 
 (def per-row 9)
 
@@ -116,32 +116,3 @@
     (-> board
         (assoc (:from move') from)
         (assoc (:to move') to))))
-
-;; now we can implement different players that behave accordingly
-
-(defrecord Player [n color strategy])
-
-(defn player
-  "Given a player number and an optional strategy, creates a player"
-  ([n] (player n :random))
-  ([n strategy] (let [colors [:r :g :b]]
-                  (->Player n (nth colors n) strategy))))
-
-(defmulti pick-move
-  "Decides which move gets picked, based on the strategy of a player"
-  (fn [_ player] (:strategy player)))
-
-(defmethod pick-move :bottom-left [board player]
-  ;; this just moves the first stone up, useful for debugging
-  {:from [0 0] :to [1 1]})
-
-(defmethod pick-move :random [board player]
-  (rand-nth (all-moves board (:color player))))
-
-(comment
-  ;; now we can pick a move for player red like this:
-  (let [player (player 0)]
-    (pick-move @board player))
-  )
-
-;; everything that actually interacts with the server can be found in cli.clj
