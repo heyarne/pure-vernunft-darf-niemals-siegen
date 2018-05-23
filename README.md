@@ -19,7 +19,17 @@ $ ./run-server.sh
 Afterwards you can run the clients like so:
 
 ```
-$ lein run
+$ lein run -- --help
+Spawns one or more clients to play the gawihs game.
+
+Usage: gawihs-client [options]
+
+Options:
+  -H, --host HOSTNAME  localhost  Host name or IP address
+  -n, --players N      1          Amount of players
+  -h, --help
+$ # or if you just want to connect to localhost and start one client
+% lein run
 ```
 
 The server should output something along those lines:

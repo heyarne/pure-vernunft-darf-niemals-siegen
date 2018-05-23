@@ -63,10 +63,39 @@
           (recur (get-move! client)))))
     (println+ "Game over")))
 
-;; the function that will be invoked when calling the command line script
+;; for an explanation check out https://github.com/clojure/tools.cli#quick-start
+
+(def cli-options
+  [["-H" "--host HOSTNAME" "Host name or IP address"
+    :default nil
+    :default-desc "localhost"]
+   ["-n" "--players N" "Amount of players"
+    :default 1
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(<= 1 % 3) "Must be a number between 1 and 3 (inclusive)."]]
+   ["-h" "--help"]])
+
+(defn help [summary]
+  (->> ["Spawns one or more clients to play the gawihs game."
+        ""
+        "Usage: gawihs-client [options]"
+        ""
+        "Options:"
+        summary]
+       (str/join \newline)))
+
+(defn exit [status msg]
+  (println msg)
+  (System/exit status))
+
+;; the actual main function that will be invoked from the command line
 
 (defn -main
   [& args]
-  (dotimes [i 3]
-    (future
-      (connect! nil "Pure Vernunft" (nth icons i) game/board))))
+  (let [{:keys [options summary]} (parse-opts args cli-options)]
+    (if (or (:help options) (:errors options))
+      ;; display the help message when asked for it or an error occured
+      (exit (if (:errors options) 1 0) (help summary))
+      ;; if not: ready, set, go!
+      (dotimes [i (:players options)]
+        (future (connect! (:host options) "Pure Vernunft" (nth icons i) game/board))))))
