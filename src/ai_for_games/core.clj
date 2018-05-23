@@ -1,10 +1,5 @@
 (ns ai-for-games.core
-  (:require [clojure.string :as str])
-  (:import [lenz.htw.gawihs.net NetworkClient]
-           [lenz.htw.gawihs Move]
-           [javax.imageio ImageIO]
-           [java.io File])
-  (:gen-class))
+  (:require [clojure.string :as str]))
 
 ;; NOTE: :r, :g, :b in the order of player 1, 2 and 3
 
@@ -30,20 +25,6 @@
                   nil  nil  [:g] []   []   []   []   []   [:b]
                   nil  nil  nil  [:g] []   []   []   []   [:b]
                   nil  nil  nil  nil  [:g] []   []   []   [:b]]))
-
-(defn format-board
-  "Prints a nice human-readable output of the current board to System.out (useful
-  for debugging)"
-  [board]
-  (->> (map str board)
-       (map (partial format "%-8s"))
-       (partition per-row)
-       (map str/join)
-       (str/join "\n")))
-
-(comment
-  ;; this is how you use it:
-  (println (format-board @board)))
 
 (defn on-top?
   "Predicate to tell whether a player is on top in a given cell"
@@ -163,99 +144,4 @@
     (pick-move @board player))
   )
 
-;; logic for actually connecting to the server and interacting with it
-
-(def icons (map #(str "resources/icons/" % ".png") ["aperture", "bolt", "bug"]))
-
-(defn send-move!
-  "Sends a move to the client"
-  [client move]
-  (let [[from-x from-y] (:from move)
-        [to-x to-y] (:to move)]
-    (.sendMove client (Move. from-x from-y to-x to-y))))
-
-(defn get-move!
-  "A small helper to make a `Move` nicer to work with"
-  [client]
-  (when-let [m (.receiveMove client)]
-    {:from [(.fromX m) (.fromY m)]
-     :to [(.toX m) (.toY m)]}))
-
-(defn invalid-move?
-  "The client receives an invalid move when the game has ended"
-  [move]
-  (= move {:from [0 -1] :to [0 -1]}))
-
-(def is-printing? (atom false))
-
-(defn println+
-  "A synchronized println"
-  [& args]
-  (loop []
-    (dosync
-     (if-not @is-printing?
-       (do (swap! is-printing? not)
-           (apply println args)
-           (swap! is-printing? not))
-       (recur)))))
-
-(defn connect!
-  "Starts the connection for a client and plays the game"
-  [host team icon-path]
-  (let [board (atom @board) ; < every thread gets its own board. this makes reasoning a bit easier
-        icon (ImageIO/read (File. icon-path))
-        client (NetworkClient. host team icon)
-        n (.getMyPlayerNumber client)
-        p (player n)
-        ;; FIXME: For now we assume everybody picks a move in time.
-        time-limit (.getTimeLimitInSeconds client)
-        latency (.getExpectedNetworkLatencyInMilliseconds client)]
-    (println+ "Player number" n "Time limit" time-limit "Latency" latency)
-    (loop [move (get-move! client)]
-      (if (invalid-move? move)
-        (println+ "Invalid move!" move)
-        (do
-          (if (nil? move)
-            ;; it's time to pick a move
-            (let [move (pick-move @board p)]
-              (println+ "Sending move" move)
-              (send-move! client (pick-move @board p)))
-            ;; we should update our game state
-            (do
-              (println+ "Got move!" move)
-              (swap! board apply-move move)
-              (println+ (format-board @board))))
-          (recur (get-move! client)))))
-    (println+ "Game over")))
-
-;; below are some more helper functions for debugging
-
-(defn log->moves
-  "Parses log output into moves"
-  [log-output]
-  (->>
-   (re-seq #"\d+,\d+ -> \d+,\d+" log-output)
-   (map #(str/split % #" -> "))
-   (map (fn [m] (->> (mapcat #(str/split % #",") m)
-                     (map #(Long/parseLong %)))))
-   (map (fn [[a b c d]] {:from [a b] :to [c d]}))))
-
-(defn replay-game
-  "Given a board and some moves, returns the board after
-  all those moves are applied"
-  [board moves]
-  (println+ "Initial board config\n" (format-board board) "\n")
-  (loop [board board
-         moves moves]
-    (when (seq moves)
-      (println+ (str "Applying move" (first moves) "\n"
-                     (format-board (apply-move board (first moves)))))
-      (recur (apply-move board (first moves)) (rest moves)))))
-
-;; the function that will be invoked when calling the command line script
-
-(defn -main
-  [& args]
-  (dotimes [i 3]
-    (future
-      (connect! nil "Pure Vernunft" (nth icons i)))))
+;; everything that actually interacts with the server can be found in cli.clj
