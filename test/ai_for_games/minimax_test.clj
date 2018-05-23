@@ -7,6 +7,19 @@
   {:without-red (map #(if (= [:r] %) [] %) @game/board)
    :only-green (map #(if (= [:g] %) % []) @game/board)})
 
+(deftest game-tree-structure
+  (testing "A game tree of depth 0"
+    (is (= {:board @game/board
+            :player :r
+            :next nil}
+           (game-tree @game/board [:r :g :b] 0))))
+  (testing "A game tree of depth 1"
+    (let [depth-one (game-tree @game/board [:r :g :b] 1)
+          next-level (first (:next depth-one))]
+      (is (= :g (:player next-level)))
+      (is (not= @game/board (:board next-level)))
+      (is (= 0 (count (:next next-level)))))))
+
 (deftest players-present-on-field
   (testing "The initial configuration"
     (is (= #{:r :g :b} (players-on-field @game/board))))
