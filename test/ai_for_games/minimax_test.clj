@@ -6,7 +6,18 @@
 
 (def fixtures
   {:without-red (map #(if (= [:r] %) [] %) @game/board)
-   :only-green (map #(if (= [:g] %) % []) @game/board)})
+   :only-green (map #(if (= [:g] %) % []) @game/board)
+   :many-red-friends (-> @game/board
+                         (set-cell [4 0] nil)
+                         (set-cell [3 0] nil)
+                         (set-cell [2 1] [:r])
+                         (set-cell [1 1] [:r]))
+   :most-blue-enemies (-> @game/board
+                          (set-cell [7 4] [:g])
+                          (set-cell [7 5] [:r]))
+   :blue-very-immobilized (-> @game/board
+                              (set-cell [8 8] [:b :g])
+                              (set-cell [8 5] [:b :g]))})
 
 (deftest players-present-on-field
   (testing "The initial configuration"
@@ -24,11 +35,7 @@
     (is (= Double/POSITIVE_INFINITY
            (score (fixtures :only-green) :g))))
   (testing "Should have a higher score when there are more own stones close by"
-    (is (> (score-by-neighboring-friends (neighbor-cells (-> @game/board
-                                                             (set-cell [4 0] nil)
-                                                             (set-cell [3 0] nil)
-                                                             (set-cell [2 1] [:r])
-                                                             (set-cell [1 1] [:r])) :r) :r)
+    (is (> (score-by-neighboring-friends (neighbor-cells (fixtures :many-red-friends) :r) :r)
            (score-by-neighboring-friends (neighbor-cells @game/board :r) :r)
            (score-by-neighboring-friends (neighbor-cells (fixtures :without-red) :r) :r))))
   (testing "Should have a lower score when there are more enemies next to us"
@@ -38,17 +45,30 @@
              (score-by-neighboring-enemies (neighbor-cells (-> @game/board
                                                                (set-cell [7 8] [:g])) :b)
                                            enemies)
-             (score-by-neighboring-enemies (neighbor-cells (-> @game/board
-                                                               (set-cell [7 4] [:g])
-                                                               (set-cell [7 5] [:r])) :b)
+             (score-by-neighboring-enemies (neighbor-cells (fixtures :most-blue-enemies) :b)
                                            enemies)))))
   (testing "Should have a higher score when more enemies are unable to move"
     (is (< (score-by-immobilized-enemies @game/board :b)
            (score-by-immobilized-enemies (-> @game/board
                                              (set-cell [0 4] [:g :b])) :b)
-           (score-by-immobilized-enemies (-> @game/board
-                                             (set-cell [8 8] [:b :g])
-                                             (set-cell [8 5] [:b :g])) :g)))))
+           (score-by-immobilized-enemies (fixtures :blue-very-immobilized) :g))))
+  (testing "Should yield different results when changing the weights"
+    ;; we always bind the two irrelevant factors so that they don't play any role
+    (is (< (binding [*enemy-factor* 0, *immobilization-facor* 0]
+             (binding [*friend-factor* 0.1]
+               (score (fixtures :many-red-friends) :r))
+             (binding [*friend-factor* 1]
+               (score (fixtures :many-red-friends) :r)))))
+    (is (< (binding [*friend-factor* 0, *immobilization-facor* 0]
+             (binding [*enemy-factor* 0.6]
+               (score (fixtures :most-blue-enemies) :b))
+             (binding [*enemy-factor* 0.5]
+               (score (fixtures :most-blue-enemies) :b)))))
+    (is (< (binding [*friend-factor*, 0 *enemy-factor* 0]
+             (binding [*immobilization-facor* -10.0]
+               (score (fixtures :blue-very-immobilized) :b))
+             (binding [*immobilization-facor* 100.0]
+               (score (fixtures :blue-very-immobilized) :b)))))))
 
 (let [board (-> @game/board
                 (set-cell [0 4] [:g :r]))]

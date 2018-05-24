@@ -4,6 +4,19 @@
   (:require [ai-for-games.core :refer [on-top? valid-starts idx->coord
                                        all-neighbors all-moves apply-move]]))
 
+;; these dynamic vars can be used to influence the scoring
+
+(def ^:dynamic *friend-factor* 1.0)
+(def ^:dynamic *enemy-factor* 1.0)
+(def ^:dynamic *immobilization-facor* 1.0)
+
+(comment
+  ;; you can call the scoring function like this to influence the weights
+  (binding [*friend-factor* 2.0
+            *enemy-factor* 1.5
+            *immobilization-facor* -3.0]
+    (score board player)))
+
 ;; for orientation, our game tree will look like this:
 ;; {:board b
 ;;  :player p
@@ -65,10 +78,13 @@
       (and (on-field player) (= (count on-field) 1)) Double/POSITIVE_INFINITY
       ;; ... and if neither is the case we need a more sophisticated scoring algorithm
       :else (let [neighbor-cells (neighbor-cells board player)
-                  enemies (remove #(= % player) on-field)
-                  [friend-score enemy-score immobilizied-score] (pvalues (score-by-neighboring-friends neighbor-cells player)
-                                                                         (score-by-neighboring-enemies neighbor-cells enemies)
-                                                                         (score-by-immobilized-enemies board player))]))))
+                  enemies (disj on-field player)
+                  [friend-score enemy-score immobilized-score] (pvalues (score-by-neighboring-friends neighbor-cells player)
+                                                                        (score-by-neighboring-enemies neighbor-cells enemies)
+                                                                        (score-by-immobilized-enemies board player))]
+              (+ (* friend-score *friend-factor*)
+                 (* enemy-score *enemy-factor*)
+                 (* immobilized-score *immobilization-facor*))))))
 
 (defn calc-next
   "Given a start configuration, an infinite sequence of a player's turns and
