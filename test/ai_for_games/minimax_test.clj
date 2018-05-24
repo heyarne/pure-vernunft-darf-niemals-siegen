@@ -41,7 +41,21 @@
              (score-by-neighboring-enemies (neighbor-cells (-> @game/board
                                                                (set-cell [7 4] [:g])
                                                                (set-cell [7 5] [:r])) :b)
-                                           enemies))))))
+                                           enemies)))))
+  (testing "Should have a higher score when more enemies are unable to move"
+    (is (< (score-by-immobilized-enemies @game/board :b)
+           (score-by-immobilized-enemies (-> @game/board
+                                             (set-cell [0 4] [:g :b])) :b)
+           (score-by-immobilized-enemies (-> @game/board
+                                             (set-cell [8 8] [:b :g])
+                                             (set-cell [8 5] [:b :g])) :g)))))
+
+(let [board (-> @game/board
+                (set-cell [0 4] [:g :r]))]
+  (->> (game/valid-starts board :b)
+       (map (partial nth board))
+       (filter #(= 2 (count %)))
+       count))
 
 (deftest game-tree-structure
   (testing "A game tree of depth 0"

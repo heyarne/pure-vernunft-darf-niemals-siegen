@@ -45,9 +45,13 @@
        count
        (* -1)))
 
-(defn score-by-occupied-enemies
+(defn score-by-immobilized-enemies
   "Returns a higher score when more enemies are below a player's stone"
-  [_ _])
+  [board player]
+  (->> (valid-starts board player)
+       (map (partial nth board))
+       (filter #(= 2 (count %)))
+       count))
 
 (defn score
   "Given a board configuration and player whose perspective we take, returns a
@@ -62,8 +66,9 @@
       ;; ... and if neither is the case we need a more sophisticated scoring algorithm
       :else (let [neighbor-cells (neighbor-cells board player)
                   enemies (remove #(= % player) on-field)
-                  [friend-score enemy-score] (pvalues (score-by-neighboring-friends neighbor-cells player)
-                                                      (score-by-neighboring-enemies neighbor-cells enemies))]))))
+                  [friend-score enemy-score immobilizied-score] (pvalues (score-by-neighboring-friends neighbor-cells player)
+                                                                         (score-by-neighboring-enemies neighbor-cells enemies)
+                                                                         (score-by-immobilized-enemies board player))]))))
 
 (defn calc-next
   "Given a start configuration, an infinite sequence of a player's turns and
