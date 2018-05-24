@@ -1,6 +1,7 @@
 (ns ai-for-games.core-test
   (:require [clojure.test :refer :all]
-            [ai-for-games.core :refer :all]))
+            [ai-for-games.core :refer :all]
+            [ai-for-games.helpers :refer [set-cell]]))
 
 (deftest all-allowed-starts
   (testing "An allowed start is every cell where the player is on top"
@@ -22,11 +23,6 @@
     (is (= [[0 0] [1 0] [2 0] [3 0] [4 0]] (map idx->coord (valid-starts @board :r))))
     (is (= [[0 4] [1 5] [2 6] [3 7] [4 8]] (map idx->coord (valid-starts @board :g))))
     (is (= [[8 4] [8 5] [8 6] [8 7] [8 8]] (map idx->coord (valid-starts @board :b))))))
-
-(defn- set-cell
-  "Helper to easily just change a cell to what we want"
-  [board coord cell]
-  (assoc board (coord->idx coord) cell))
 
 (deftest valid-moves
   (testing "A non-existing cell is not a valid move"

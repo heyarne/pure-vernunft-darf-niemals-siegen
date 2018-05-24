@@ -1,7 +1,8 @@
 (ns ai-for-games.minimax
   "This namespace contains the implementation of the minimax algorithm, as well
   as the functions we use for scoring."
-  (:require [ai-for-games.core :refer [all-moves apply-move]]))
+  (:require [ai-for-games.core :refer [on-top? valid-starts idx->coord
+                                       all-neighbors all-moves apply-move]]))
 
 ;; for orientation, our game tree will look like this:
 ;; {:board b
@@ -10,6 +11,59 @@
 ;;          :player p+1
 ;;          :next [...]},
 ;;          ...]}
+
+(defn players-on-field
+  "Returns a set of all players on the field"
+  [board]
+  (->> (flatten board)
+       (remove nil?)
+       (set)))
+
+(defn neighbor-cells
+  "Returns all neighboring cells for all cells that a player has stones on"
+  [board player]
+  (->> (valid-starts board player)
+       (map idx->coord)
+       (mapcat (partial all-neighbors board))
+       (map second)))
+
+(defn score-by-neighboring-friends
+  "Returns a higher score if a player has many neighbors of its own color"
+  [neighbor-cells player]
+  ;; for each cell that we could make a move in our next round, we count
+  ;; how many neighbors have our own color; the reasoning being that we're
+  ;; more flexible if we have more of our own stones next to us
+  (->> neighbor-cells
+       (filter (partial some #{player}))
+       count))
+
+(defn score-by-neighboring-enemies
+  "Returns a lower score when enemies are next to a player"
+  [neighbor-cells enemies]
+  (->> neighbor-cells
+       (filter (partial some enemies))
+       count
+       (* -1)))
+
+(defn score-by-occupied-enemies
+  "Returns a higher score when more enemies are below a player's stone"
+  [_ _])
+
+(defn score
+  "Given a board configuration and player whose perspective we take, returns a
+  score between -Infinity and +Infinity."
+  [board player]
+  (let [on-field (players-on-field board)]
+    (cond
+      ;; we lost, let's just try to avoid that
+      (not (on-field player)) Double/NEGATIVE_INFINITY
+      ;; we won, that would be pretty sweet
+      (and (on-field player) (= (count on-field) 1)) Double/POSITIVE_INFINITY
+      ;; ... and if neither is the case we need a more sophisticated scoring algorithm
+      :else (let [neighbor-cells (neighbor-cells board player)
+                  enemies (remove #(= % player) on-field)
+                  [friend-score enemy-score] (pvalues (score-by-neighboring-friends neighbor-cells player)
+                                                      (score-by-neighboring-enemies neighbor-cells enemies))]))))
 
 (defn calc-next
   "Given a start configuration, an infinite sequence of a player's turns and
@@ -32,25 +86,3 @@
     {:board board
      :player (first turns)
      :next (calc-next board (rest turns) (dec depth))}))
-
-(defn players-on-field
-  "Returns a set of all players on the field"
-  [board]
-  (->> (flatten board)
-       (remove nil?)
-       (set)))
-
-(defn score
-  "Given a board configuration, a move made and player whose perspective we
-  take, returns a score between -Infinity and +Infinity."
-  [board move player]
-  (let [on-field (players-on-field board)]
-    (cond
-      ;; we lost, let's just try to avoid that
-      (not (on-field player)) Double/NEGATIVE_INFINITY
-
-      ;; we won, that would be pretty sweet
-      (and (on-field player) (= (count on-field) 1)) Double/POSITIVE_INFINITY
-
-      ;; TODO: More complicated scoring algorithms
-      :else 0.0)))

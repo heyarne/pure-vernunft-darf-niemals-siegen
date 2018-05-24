@@ -67,6 +67,10 @@
                (not-any? #(>= % per-row) cell-coord))
       [cell-coord (nth board (coord->idx cell-coord))])))
 
+(defn all-neighbors
+  [board cell]
+  (map (partial neighbor board cell) directions))
+
 (defn valid-move?
   "Checks a cell to see whether we can move there"
   [board {:keys [from to]} player]

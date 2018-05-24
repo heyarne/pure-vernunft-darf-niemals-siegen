@@ -16,6 +16,11 @@
   ;; this is how you use it:
   (println (format-board @board)))
 
+(defn set-cell
+  "Easily change a cell to what we want"
+  [board coord cell]
+  (assoc board (game/coord->idx coord) cell))
+
 (def is-printing? (atom false))
 
 (defn println+
