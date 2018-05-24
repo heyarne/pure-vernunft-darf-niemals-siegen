@@ -1,8 +1,9 @@
 (ns ai-for-games.minimax
   "This namespace contains the implementation of the minimax algorithm, as well
   as the functions we use for scoring."
-  (:require [ai-for-games.core :refer [on-top? valid-starts idx->coord
-                                       all-neighbors all-moves apply-move]]))
+  (:require [clojure.walk :refer [postwalk]]
+            [ai-for-games.core :refer [valid-starts idx->coord all-neighbors
+                                       all-moves apply-move]]))
 
 ;; these dynamic vars can be used to influence the scoring
 
@@ -99,6 +100,9 @@
                         :next (calc-next board (rest turns) (dec depth))})
            next-boards))))
 
+;; FIXME: The players associated with each turn in the game tree is off-by-one;
+;; Instead of starting with the current move, we should start with the next ones
+
 (defn game-tree
   "Given the current status of the game, will return a tree of possible outcomes
   up to a given depth."
@@ -107,3 +111,17 @@
     {:board board
      :player (first turns)
      :next (calc-next board (rest turns) (dec depth))}))
+
+(defn minimax
+  "Picks the most promising path in a game tree"
+  [node player]
+  ;; we recurse until we've reached a leaf; when we've reached one, we score it.
+  ;; after scoring we can discard all the leaves with sub-optimal score
+  (if-let [next (:next node)]
+    (let [next (->> (map #(minimax % player) (:next node))
+                    (sort-by :score))]
+      (assoc node
+             :next next
+             :score (:score (last next))))
+    ;; we score a node such that each player picks the best move for themselves
+    (assoc node :score (score (:board node) (:player node)))))
