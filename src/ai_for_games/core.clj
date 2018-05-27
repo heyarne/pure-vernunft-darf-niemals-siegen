@@ -120,3 +120,14 @@
     (-> board
         (assoc (:from move') from)
         (assoc (:to move') to))))
+
+(defn disqualify
+  "Removes a player's stones from the field"
+  [board player]
+  (mapv (fn [cell]
+          (if (some #{player} cell)
+            (if (= 1 (count cell))
+              nil
+              (into [] (remove #{player} cell)))
+            cell))
+        board))

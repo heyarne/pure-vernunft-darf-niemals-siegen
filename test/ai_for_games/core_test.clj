@@ -66,3 +66,15 @@
   (testing "A stone should be put on top a non-empty field"
     (let [board (apply-move [[:r] [:b]] {:from [1 0] :to [0 0]})]
       (is (on-top? (first board) :b)))))
+
+(deftest player-disqualification
+  (testing "A cell disappears if a player is disqualified and their stone is the only one occupying it"
+    (is (= 60 (count (remove nil? @board))))
+    (is (= 55 (->> (disqualify @board :g) (remove nil?) count))))
+  (testing "A disqualified player's stone is taken out of the game, leaving all other stones in the cell"
+    (let [disqualified (disqualify (set-cell @board [8 8] [:b :r]) :b)]
+      (is (= 56 (count (remove nil? disqualified))))
+      (is (= [:r] (nth disqualified (coord->idx [8 8]))))))
+    (let [disqualified (disqualify (set-cell @board [8 8] [:r :b]) :b)]
+      (is (= 56 (count (remove nil? disqualified))))
+      (is (= [:r] (nth disqualified (coord->idx [8 8]))))))
