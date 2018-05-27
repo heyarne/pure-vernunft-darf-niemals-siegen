@@ -46,23 +46,41 @@
         ;; FIXME: For now we assume everybody picks a move in time.
         time-limit (.getTimeLimitInSeconds client)
         latency (.getExpectedNetworkLatencyInMilliseconds client)]
-    (println+ "Player number" n "Time limit" time-limit "Latency" latency)
-    (loop [move (get-move! client)]
-      (if (invalid-move? move)
-        (println+ "Invalid move!" move)
+    (println+ "Player color" (:color p) "Time limit" time-limit "Latency" latency)
+    (loop [score 0
+           turns (cycle '(:r :g :b)) ; to keep track who's still in the game
+           last-turn nil ; which player was last?
+           move (get-move! client)]
+      #_(println+ "Players in game:" (take 3 turns) "Got move" move)
+      (cond
+        ;; somebody didn't make a move in time / picked an invalid move
+        (invalid-move? move)
         (do
-          (if (nil? move)
-            ;; it's time to pick a move
-            (let [move (player/pick-move @board p)]
-              (println+ "Sending move" move)
-              (send-move! client move))
-            ;; we should update our game state
+          (println+ "Invalid move...")
+          (if (= last-turn (:color p))
+            ;; we're out :/
+            (println+ "Game over! Final score:" score)
+            ;; somebody else made mumpitz
             (do
-              (println+ "Got move!" move)
-              (swap! board game/apply-move move)
-              (println+ (format-board @board))))
-          (recur (get-move! client)))))
-    (println+ "Game over")))
+              (println+ "Disqualifying" last-turn)
+              (swap! board #(game/disqualify % last-turn))
+              (recur score (rest (remove #(= % last-turn) turns)) last-turn (get-move! client)))))
+
+        ;; it's our turn
+        (nil? move)
+        (let [move (player/pick-move @board p)]
+          (println+ "Sending move" move)
+          (send-move! client move)
+          ;; we don't change anything here because the server will just echo
+          ;; our move back; we can use that to update the values
+          (recur score turns last-turn (get-move! client)))
+
+        ;; we received a move and survived another round
+        :else
+        (do
+          (swap! board game/apply-move move)
+          (println+ (format-board @board))
+          (recur (inc score) (rest turns) (first turns) (get-move! client)))))))
 
 ;; for an explanation check out https://github.com/clojure/tools.cli#quick-start
 
