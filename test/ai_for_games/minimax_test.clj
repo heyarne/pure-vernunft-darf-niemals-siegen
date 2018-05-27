@@ -78,19 +78,14 @@
        count))
 
 (deftest game-tree-structure
-  (testing "A game tree of depth 0"
-    (is (= {:board @game/board
-            :player :r
-            :next nil}
-           (game-tree @game/board [:r :g :b] 0))))
   (testing "A game tree of depth 1"
-    (let [depth-one (game-tree @game/board [:r :g :b] 1)
+    (let [depth-one (first (game-tree @game/board [:r :g :b] 1))
           next-level (first (:next depth-one))]
       (is (= :g (:player next-level)))
       (is (not= @game/board (:board next-level)))
       (is (= 0 (count (:next next-level))))))
   (testing "A game tree of depth 10"
-    (let [how-deep-is-your-love (game-tree @game/board [:r :g :b] 10)
+    (let [how-deep-is-your-love (first (game-tree @game/board [:r :g :b] 10))
           really-deep (reduce #(%2 %1) how-deep-is-your-love (->> (cycle [:next first])
                                                                   (take 20)))]
       (is (map? really-deep))

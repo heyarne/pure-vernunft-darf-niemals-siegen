@@ -87,30 +87,19 @@
                  (* enemy-score *enemy-factor*)
                  (* immobilized-score *immobilization-facor*))))))
 
-(defn calc-next
-  "Given a start configuration, an infinite sequence of a player's turns and
-  a maximum depth, calculates all possible next configurations"
-  [board turns depth]
-  (when (> depth -1)
-    (let [player (first turns)
-          next-boards (->> (all-moves board player)
-                           (map (partial apply-move board)))]
-      (map (fn [board] {:board board
-                        :player player
-                        :next (calc-next board (rest turns) (dec depth))})
-           next-boards))))
-
-;; FIXME: The players associated with each turn in the game tree is off-by-one;
-;; Instead of starting with the current move, we should start with the next ones
-
 (defn game-tree
   "Given the current status of the game, will return a tree of possible outcomes
   up to a given depth."
   [board players depth]
   (let [turns (cycle players)]
-    {:board board
-     :player (first turns)
-     :next (calc-next board (rest turns) (dec depth))}))
+    (when (> depth 0)
+      (let [player (first turns)
+            next-boards (->> (all-moves board player)
+                             (map (partial apply-move board)))]
+        (map (fn [board] {:board board
+                          :player player
+                          :next (game-tree board (rest turns) (dec depth))})
+             next-boards)))))
 
 (defn minimax
   "Picks the most promising path in a game tree"
