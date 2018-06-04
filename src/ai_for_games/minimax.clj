@@ -95,7 +95,8 @@
     (when (> depth 0)
       (let [player (first turns)
             next-boards (->> (all-moves board player)
-                             (map (partial apply-move board)))]
+                             (map #(-> (apply-move board %)
+                                       (assoc :move %))))]
         (map (fn [board] {:board board
                           :player player
                           :next (game-tree board (rest turns) (dec depth))})
@@ -114,3 +115,11 @@
              :score (:score (last next))))
     ;; we score a node such that each player picks the best move for themselves
     (assoc node :score (score (:board node) (:player node)))))
+
+(defn pick-move
+  "Complete application of the minimax algorithm"
+  [board player]
+  (->> (game-tree board [:r :g :b] 10)
+       (sort-by :score)
+       last
+       :move))

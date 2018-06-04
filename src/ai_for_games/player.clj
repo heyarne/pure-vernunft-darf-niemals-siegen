@@ -1,12 +1,13 @@
 (ns ai-for-games.player
   "This module implements different strategies for players."
-  (:require [ai-for-games.core :refer [all-moves]]))
+  (:require [ai-for-games.core :refer [all-moves]]
+            [ai-for-games.minimax :as minimax]))
 
 (defrecord Player [n color strategy])
 
 (defn player
   "Given a player number and an optional strategy, creates a player"
-  ([n] (player n :random))
+  ([n] (player n :minimax))
   ([n strategy] (let [colors [:r :g :b]]
                   (->Player n (nth colors n) strategy))))
 
@@ -22,7 +23,7 @@
   (rand-nth (all-moves board (:color player))))
 
 (defmethod pick-move :minimax [board player]
-  (throw (ex-info "Not yet implemented")))
+  (minimax/pick-move board player))
 
 (comment
   ;; now we can pick a move for player red like this:
