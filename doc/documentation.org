@@ -41,7 +41,12 @@ Eine weitere Eigenheit der Sprache ist die Art und Weise der Interaktion; typisc
 
 #+NAME: Implementierung
 * Implementierung
-** TODO Umgebung
+** Umgebung
+
+Das Projekt wurde entwickelt mit [[https://java.com/en/download/manual.jsp][Java 1.8]], [[https://clojure.org/guides/getting_started][Clojure 1.8]] und [[https://leiningen.org/][Leiningen 2.8.1]]. Leiningen ist ein Build-Tool für Clojure, das dabei hilft, gängige Tasks zu automatisieren, ein Projekt zu strukturieren und Abhängigkeiten zu verwalten. Daraus ergibt sich für das vorliegende Projekt ein =src=-Ordner mit sämtlichen Modulen, die in ihrer Gesamtheit die Implementierung des Clients bilden, einen =test=-Ordner, der Unit-Tests beinhaltet und einen =resources=-Ordner, der weitere zugehörige Dateien wie Bilder und die vorgegebenen Bibliotheken enthält. Eine einfache REPL lässt sich mit dem Kommando =lein repl= starten, Tests werden mithilfe des Kommandos =lein test= ausgeführt.
+
+Testen ist in Clojure reibungslos und tief in die Sprache integriert: Die Standardbibliothek kommt mit einem simplen aber mächtigen Testing-Framework in Form von =clojure.test= und sprachbedingt bedeutet ein Test häufig nichts anderes als den Vergleich einer ad-hoc generierten oder manipulierten Datenstruktur und dem Rückgabewert einer Funktion mit einem simplen Gleichheits-Operator. Der ganze Entwicklungsprozess gestaltete sich daher als Mischung aus der Interaktion mit einer tief in den Editor integrierten REPL und kontinuierlich laufenden Tests, die bei der dynamischen Natur der Sprache etwas mehr Zuversicht schenken konnten, das laufende Annahmen über Codeverhalten weiter bestehen. Zusätzlich dazu kommunizieren die geschriebenen Tests diese Annahmen anderen Menschen gegenüber.
+
 ** TODO Modellierung des Spiels
 ** TODO Minimax-Algorithmus
 ** TODO Genetischer Algorithmus
