@@ -92,14 +92,16 @@
   up to a given depth."
   [board players depth]
   (let [turns (cycle players)]
-    (when (> depth 0)
+    (when (> depth -1)
       (let [player (first turns)
             next-boards (->> (all-moves board player)
-                             (map #(-> (apply-move board %)
-                                       (assoc :move %))))]
-        (map (fn [board] {:board board
-                          :player player
-                          :next (game-tree board (rest turns) (dec depth))})
+                             (map (fn [move]
+                                    {:board (apply-move board move)
+                                     :player player
+                                     :move move})))]
+        (map (fn [board-with-move]
+               (assoc board-with-move
+                      :next (game-tree board (rest turns) (dec depth))))
              next-boards)))))
 
 (defn minimax

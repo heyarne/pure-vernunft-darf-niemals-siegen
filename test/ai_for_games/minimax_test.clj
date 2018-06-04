@@ -89,5 +89,5 @@
           really-deep (reduce #(%2 %1) how-deep-is-your-love (->> (cycle [:next first])
                                                                   (take 20)))]
       (is (map? really-deep))
-      (is (= #{:board :player :next} (set (keys really-deep))))
+      (is (= #{:board :move :player :next} (set (keys really-deep))))
       (is (nil? (:next really-deep))))))
