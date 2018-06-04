@@ -1,0 +1,52 @@
+#+STARTUP: hidestars
+#+TITLE: AI for Games and Interactive Systems
+#+SUBTITLE: Dokumentation zur Übung 1
+#+AUTHOR: Arne Schlüter (538145), Katharina Spangehl (548176)
+#+LANGUAGE: de-de
+#+LATEX_HEADER: \usepackage[]{babel}
+
+* Einleitung
+
+Dieser Text kommentiert und dokumentiert die Abgabe zur Übung Nummer 1 des Kurses AI for Games and Interactive Systems, geleitet von Prof. Dr. Tobias Lenz an der HTW Berlin im Sommersemester 2018.
+
+Ziel der Übung war es, einen Bot zu programmieren, der in einem vorgegebenen Spiel mit Namen Gawihs möglichst intelligente Züge auswählt und so über den Spielserver gegen andere Spiele antreten kann. Die Zugauswahl sollte mithilfe des Alpha-Beta-Algorithmus erfolgen, der eine erweiterte Version des Minimax-Algorithmus darstellt. Ferner sollte eine dynamische Verbesserung im Laufe einer Entwicklung, die einem genetischen Algorithmus folgt, implementiert werden. Weitere Informationen dazu finden sich im Kapitel [[Implementierung]].
+
+Gegeben war seitens des Dozenten eine Implementierung des Spieleservers und einige Clientbibliotheken, die die Client-Server-Interaktion gestalten sollten. Diese gegebenen Bestandteile wurden als =.jar=-Dateien angeliefert und waren auf der Java Virutal Machine (JVM) auszuführen.
+
+* Wahl der Programmiersprache
+
+Die wohl interessanteste und schwerwiegendste Entscheidung, die im Zusammenhang mit dieser Abgabe gefallen ist, war die Wahl der Programmiersprache Clojure als Basis der Implementierung. Clojure ist ein moderner Lisp-Dialekt, der als gehostete Sprache mehrere Compile-Targets hat - unter anderem die JVM, auf die die schon gegebenen Programmbestandteile abzielten. Der Begriff gehostete Sprache beinhaltet die Intention seitens der Schöpfer, eine möglichst reibungslose Integration in bereits bestehende Ökosysteme zu garantieren und diese dort zu erweitern, wo Clojure einen zusätzlichen Nutzen bieten kann. Dieser zusätzliche Nutzen besteht aus Sicht der Autoren in mehreren Dingen.
+
+Die Sprache ist aufgebaut um sogenannte /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, ohne die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen:
+
+#+NAME: toy_repl
+#+CAPTION: Persistente Datenstrukturen
+#+BEGIN_SRC clojure
+(def example {:a 1, :b 2})
+(println example)
+;; => {:a 1, :b 2}
+
+(println (dissoc example :a))
+;; => {:b 2}
+
+(println example)
+;; => {:a 1, :b 2}
+#+END_SRC
+
+Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface enstpricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt.
+
+Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen.
+
+Eine weitere Eigenheit der Sprache ist die Art und Weise der Interaktion; typischerweise startet man zu Beginn des Entwicklungsprozesses einen Read Eval Print Loop (=REPL=), an den laufend Programmteile zur Ausführung geschickt werden, um deren Ergebnisse angezeigt zu bekommen und eigene Annahmen so zu veri- oder falsifizieren. Der oben gezeigte Codeblock ([[toy_repl]]) zeigt beispielhaft eine solche Interaktion mit der =REPL=. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schwrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
+
+#+NAME: Implementierung
+* Implementierung
+** TODO Umgebung
+** TODO Modellierung des Spiels
+** TODO Minimax-Algorithmus
+** TODO Genetischer Algorithmus
+* TODO Fazit
+
+- Man braucht einen Editor, der mit Clojure umgehen kann (strukturelles editieren & REPL-Integration)
+- Paradigmen machen Interop teilweise schwer
+-
