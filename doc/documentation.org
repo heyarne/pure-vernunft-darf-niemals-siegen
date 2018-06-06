@@ -11,47 +11,62 @@ Dieser Text kommentiert und dokumentiert die Abgabe zur Übung Nummer 1 des Kurs
 
 Ziel der Übung war es, einen Bot zu programmieren, der in einem vorgegebenen Spiel mit Namen Gawihs möglichst intelligente Züge auswählt und so über den Spielserver gegen andere Spiele antreten kann. Die Zugauswahl sollte mithilfe des Alpha-Beta-Algorithmus erfolgen, der eine erweiterte Version des Minimax-Algorithmus darstellt. Ferner sollte eine dynamische Verbesserung im Laufe einer Entwicklung, die einem genetischen Algorithmus folgt, implementiert werden. Weitere Informationen dazu finden sich im Kapitel [[Implementierung]].
 
-Gegeben war seitens des Dozenten eine Implementierung des Spieleservers und einige Clientbibliotheken, die die Client-Server-Interaktion gestalten sollten. Diese gegebenen Bestandteile wurden als =.jar=-Dateien angeliefert und waren auf der Java Virutal Machine (JVM) auszuführen.
+Gegeben war seitens des Dozenten eine Implementierung des Spieleservers und einige Clientbibliotheken, die die Client-Server-Interaktion gestalten sollten. Diese gegebenen Bestandteile wurden als =.jar=-Dateien angeliefert und waren auf der Java Virtual Machine (JVM) auszuführen.
 
 * Wahl der Programmiersprache
 
-Die wohl interessanteste und schwerwiegendste Entscheidung, die im Zusammenhang mit dieser Abgabe gefallen ist, war die Wahl der Programmiersprache Clojure als Basis der Implementierung. Clojure ist ein moderner Lisp-Dialekt, der als gehostete Sprache mehrere Compile-Targets hat - unter anderem die JVM, auf die die schon gegebenen Programmbestandteile abzielten. Der Begriff gehostete Sprache beinhaltet die Intention seitens der Schöpfer, eine möglichst reibungslose Integration in bereits bestehende Ökosysteme zu garantieren und diese dort zu erweitern, wo Clojure einen zusätzlichen Nutzen bieten kann. Dieser zusätzliche Nutzen besteht aus Sicht der Autoren in mehreren Dingen.
+Die wohl interessanteste und schwerwiegendste Entscheidung, die im Zusammenhang mit dieser Abgabe gefallen ist, war die Wahl der Programmiersprache Clojure als Basis der Implementierung. Clojure ist ein moderner Lisp-Dialekt, der sich als gehostete Sprache versteht. Das bedeutet, das Clojure keine eigene Laufzeitumgebung mitbringt, sondern sozusagen als Gast in verschiedenen Umgebungen ausgeführt werden kann. Zu diesen Umgebungen gehören neben der Common Language Runtime von .NET und JavaScript VMs auch die JVM, was eine Interaktion mit den bereits gegebenen Programmbestandteile ermöglicht. Trotz einer möglichen Interaktion bietet Clojure allerdings Paradigmen, die sich von denen der Gastgeber stark unterscheiden können:
 
-Die Sprache ist aufgebaut um sogenannte /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, ohne die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen:
+Eine üblicherweise im Zusammenhang mit LISP-Dialekten genannte Herangehensweise an Entwicklung heißt /REPL Driven Development/. Typischerweise startet man zu Beginn des Entwicklungsprozesses einen Read Eval Print Loop (REPL), an den laufend Programmteile zur Ausführung geschickt werden, um deren Ergebnisse angezeigt zu bekommen und eigene Annahmen so zu belegen oder zu widerlegen. Eine REPL für derartige Sprachen ist häufig über Plugins gut in den verwendeten Texteditor integriert.
+
+Einen weiteren zentralen Bestandteil der Sprache bilden /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, anstatt die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen[fn:: Dieser Codeblock zeigt eine Interaktion mit einer Clojure REPL. Als Konvention repräsentieren Zeilen, die mit =xyz=>= beginnen, User-Eingaben, wobei =xyz= der Namespace ist, in dem die Anweisungen ausgeführt werden. =;; =>= symbolisiert die Antwort der REPL nach einer ausgeführten Instruktion.]:
 
 #+NAME: toy_repl
 #+CAPTION: Persistente Datenstrukturen
 #+BEGIN_SRC clojure
-(def example {:a 1, :b 2})
-(println example)
-;; => {:a 1, :b 2}
-
-(println (dissoc example :a))
-;; => {:b 2}
-
-(println example)
-;; => {:a 1, :b 2}
+  user=> (def example {:a 1, :b 2})
+  ;; => #'user/example
+  user=> example
+  ;; => {:a 1, :b 2}
+  user=> (dissoc example :a)
+  ;; => {:b 2}
+  user=> example
+  ;; => {:a 1, :b 2}
 #+END_SRC
 
-Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface enstpricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt.
+Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface entspricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt.
 
-Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen.
-
-Eine weitere Eigenheit der Sprache ist die Art und Weise der Interaktion; typischerweise startet man zu Beginn des Entwicklungsprozesses einen Read Eval Print Loop (=REPL=), an den laufend Programmteile zur Ausführung geschickt werden, um deren Ergebnisse angezeigt zu bekommen und eigene Annahmen so zu veri- oder falsifizieren. Der oben gezeigte Codeblock ([[toy_repl]]) zeigt beispielhaft eine solche Interaktion mit der =REPL=. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schwrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
+Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schwrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
 
 #+NAME: Implementierung
 * Implementierung
 ** Umgebung
 
-Das Projekt wurde entwickelt mit [[https://java.com/en/download/manual.jsp][Java 1.8]], [[https://clojure.org/guides/getting_started][Clojure 1.8]] und [[https://leiningen.org/][Leiningen 2.8.1]]. Leiningen ist ein Build-Tool für Clojure, das dabei hilft, gängige Tasks zu automatisieren, ein Projekt zu strukturieren und Abhängigkeiten zu verwalten. Daraus ergibt sich für das vorliegende Projekt ein =src=-Ordner mit sämtlichen Modulen, die in ihrer Gesamtheit die Implementierung des Clients bilden, einen =test=-Ordner, der Unit-Tests beinhaltet und einen =resources=-Ordner, der weitere zugehörige Dateien wie Bilder und die vorgegebenen Bibliotheken enthält. Eine einfache REPL lässt sich mit dem Kommando =lein repl= starten, Tests werden mithilfe des Kommandos =lein test= ausgeführt.
+Das Projekt wurde entwickelt mit [[https://java.com/en/download/manual.jsp][Java 1.8]], [[https://clojure.org/guides/getting_started][Clojure 1.8]] und [[https://leiningen.org/][Leiningen 2.8.1]]. Leiningen ist ein Build-Tool für Clojure, das dabei hilft, gängige Aufgaben zu automatisieren, ein Projekt zu strukturieren und Abhängigkeiten zu verwalten. Daraus ergibt sich für das vorliegende Projekt ein =src=-Ordner mit sämtlichen Modulen, die in ihrer Gesamtheit die Implementierung des Clients bilden, einen =test=-Ordner, der Unit-Tests beinhaltet und einen =resources=-Ordner, der weitere zugehörige Dateien wie Bilder und die vorgegebenen Bibliotheken enthält. Eine einfache REPL lässt sich mit dem Kommando =lein repl= starten, Tests werden mithilfe des Kommandos =lein test= ausgeführt.
 
 Testen ist in Clojure reibungslos und tief in die Sprache integriert: Die Standardbibliothek kommt mit einem simplen aber mächtigen Testing-Framework in Form von =clojure.test= und sprachbedingt bedeutet ein Test häufig nichts anderes als den Vergleich einer ad-hoc generierten oder manipulierten Datenstruktur und dem Rückgabewert einer Funktion mit einem simplen Gleichheits-Operator. Der ganze Entwicklungsprozess gestaltete sich daher als Mischung aus der Interaktion mit einer tief in den Editor integrierten REPL und kontinuierlich laufenden Tests, die bei der dynamischen Natur der Sprache etwas mehr Zuversicht schenken konnten, das laufende Annahmen über Codeverhalten weiter bestehen. Zusätzlich dazu kommunizieren die geschriebenen Tests diese Annahmen anderen Menschen gegenüber.
 
 ** TODO Modellierung des Spiels
+
+Die Logik des Spiels befindet sich im Namespace =ai-for-games.core=[fn:: Die Ordnerstruktur folgt, ähnlich wie bei Java, den Namen der Namespaces. =ai-for-games.core= befindet sich in =src/ai_for_games/core.clj=]. Der Namespace bildet mit =test/ai_for_games/core_test.clj= den am besten getesteten.
+
+Das Spielbrett ist ein multidimensionaler Vektor (=board=). Ist ein Wert im Vektor =nil=, so repräsentiert er ein nicht existentes Feld. Vektoren repräsentieren Felder, auf denen sich Spieler befinden können. Das Feld ist in ein =atom= verpackt, was eine threadsichere Abstraktion für sich ändernde Werte bietet. Auf =atom= sind zwei Operationen definiert, =swap!= und =reset!=. Während =reset!= schlicht einen neuen Wert in das =atom= schreibt, dient =swap!= dazu, den im =atom= befindlichen Wert in einer atomischen Operation in Abhängigkeit des aktuellen Wertes zu ändern.
+
+Die nächsten beiden Funktionen =on-top?= und =valid-starts= definieren bereits grundsätzliche Funktionen, die der Interaktion mit dem Brett dienen. Hier wird bereits die eingangs genannte Tendenz zum Aufbau aus vielen relativ kleinen und puren Funktionen deutlich. Alle validen Startkoordinaten eines Spielers zu Beginn des Spieles lassen sich damit in der REPL folgendermaßen abfragen:
+
+#+BEGIN_SRC clojure
+  user=> (in-ns 'ai-for-games.core)
+  ai-for-games.core=> (->> (valid-starts @board :g)
+                           (map idx->coord))
+  ;; => ([0 4] [1 5] [2 6] [3 7] [4 8])
+#+END_SRC
+
+Leider hat sich in der Spielmodellierung ein Bug eingeschlichen, der auf ein falsches Regelverständnis zurückzuführen ist. =moves-from-cell=
+
 ** TODO Minimax-Algorithmus
 ** TODO Genetischer Algorithmus
 * TODO Fazit
 
 - Man braucht einen Editor, der mit Clojure umgehen kann (strukturelles editieren & REPL-Integration)
 - Paradigmen machen Interop teilweise schwer
--
+- Sehr kompakte Sprache; insgesamt 524 Zeilen Sourcecode (mit Docstrings), wovon mehr als 1/4 (160) auf Tests anfällt
