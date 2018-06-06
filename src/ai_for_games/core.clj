@@ -69,7 +69,7 @@
 
 (defn all-neighbors
   [board cell]
-  (map (partial neighbor board cell) directions))
+  (keep (partial neighbor board cell) directions))
 
 (defn valid-move?
   "Checks a cell to see whether we can move there"
@@ -90,15 +90,20 @@
 (defn moves-from-cell
   "Gives us all possible moves for a cell"
   [board from-coord player]
-  (->>
-   ;; get all neighbors which are not nil
-   (keep #(neighbor board from-coord %) directions)
-   ;; keep only those that we can go to
-   (filter (fn [[cell-coord cell]]
-             (valid-move? board {:from from-coord :to cell-coord} player)))
-   ;; ... and give them a nice representation
-   (map (fn [[cell-coord cell]]
-          {:from from-coord :to cell-coord}))))
+  ;; remove the cell we're standing on
+  (let [board' (assoc board (coord->idx from-coord) nil)]
+    (->>
+     board'
+     ;; get all cells which contain one of our stones
+     (keep-indexed (fn [idx cell] (when (= cell [player]) idx)))
+     ;; concatenate with all neighbors
+     (mapcat #(all-neighbors board' (idx->coord %)))
+     ;; give our possible moves a nice representation
+     (map (fn [[cell-coord cell]]
+            {:from from-coord :to cell-coord}))
+     ;; ... and keep only those that we can go to
+     (filter (fn [move]
+               (valid-move? board move player))))))
 
 (defn all-moves
   "Gives us all possible moves for a player"

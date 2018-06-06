@@ -19,24 +19,26 @@ Die wohl interessanteste und schwerwiegendste Entscheidung, die im Zusammenhang 
 
 Eine üblicherweise im Zusammenhang mit LISP-Dialekten genannte Herangehensweise an Entwicklung heißt /REPL Driven Development/. Typischerweise startet man zu Beginn des Entwicklungsprozesses einen Read Eval Print Loop (REPL), an den laufend Programmteile zur Ausführung geschickt werden, um deren Ergebnisse angezeigt zu bekommen und eigene Annahmen so zu belegen oder zu widerlegen. Eine REPL für derartige Sprachen ist häufig über Plugins gut in den verwendeten Texteditor integriert.
 
-Einen weiteren zentralen Bestandteil der Sprache bilden /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, anstatt die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen[fn:: Dieser Codeblock zeigt eine Interaktion mit einer Clojure REPL. Als Konvention repräsentieren Zeilen, die mit =xyz=>= beginnen, User-Eingaben, wobei =xyz= der Namespace ist, in dem die Anweisungen ausgeführt werden. =;; =>= symbolisiert die Antwort der REPL nach einer ausgeführten Instruktion.]:
+Einen weiteren zentralen Bestandteil der Sprache bilden /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, anstatt die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen[fn:: Dieser Codeblock zeigt eine Interaktion mit einer Clojure REPL. Als Konvention wird jeder Ausdruck einzeln ausgeführt. Mit =;; =>= beginnende Zeilen symbolisieren das Ergebnis einer ausgeführten Instruktion.]:
 
 #+NAME: toy_repl
 #+CAPTION: Persistente Datenstrukturen
 #+BEGIN_SRC clojure
-  user=> (def example {:a 1, :b 2})
-  ;; => #'user/example
-  user=> example
-  ;; => {:a 1, :b 2}
-  user=> (dissoc example :a)
-  ;; => {:b 2}
-  user=> example
-  ;; => {:a 1, :b 2}
+(def example {:a 1, :b 2})
+;; => #'user/example
+example
+;; => {:a 1, :b 2}
+(dissoc example :a)
+;; => {:b 2}
+example
+;; => {:a 1, :b 2}
 #+END_SRC
 
 Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface entspricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt.
 
-Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schwrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
+Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
+
+Ein weiteres vielversprechendes Feature ist /Laziness/, die, ähnlich der Immutability, als Konzept in verschiedenen Programmiersprachen auftaucht. Der Begriff bezeichnet die Eigenschaft von Sprachen, Werte erst dann zu berechnen, wenn sie gebraucht werden. Das ermöglicht Konstrukte wie unendlich große Listen - jeder Knoten liegt erst dann im RAM, wenn nach ihm gefragt wird. Im Hinblick auf eventuell sehr große Spielbäume barg das die Hoffnung, möglichst Speicher einzusparen.
 
 #+NAME: Implementierung
 * Implementierung
@@ -55,13 +57,37 @@ Das Spielbrett ist ein multidimensionaler Vektor (=board=). Ist ein Wert im Vekt
 Die nächsten beiden Funktionen =on-top?= und =valid-starts= definieren bereits grundsätzliche Funktionen, die der Interaktion mit dem Brett dienen. Hier wird bereits die eingangs genannte Tendenz zum Aufbau aus vielen relativ kleinen und puren Funktionen deutlich. Alle validen Startkoordinaten eines Spielers zu Beginn des Spieles lassen sich damit in der REPL folgendermaßen abfragen:
 
 #+BEGIN_SRC clojure
-  user=> (in-ns 'ai-for-games.core)
-  ai-for-games.core=> (->> (valid-starts @board :g)
-                           (map idx->coord))
+(in-ns 'ai-for-games.core)
+(->> (valid-starts @board :g)
+     (map idx->coord))
   ;; => ([0 4] [1 5] [2 6] [3 7] [4 8])
 #+END_SRC
 
-Leider hat sich in der Spielmodellierung ein Bug eingeschlichen, der auf ein falsches Regelverständnis zurückzuführen ist. =moves-from-cell=
+Leider hat sich in der Spielmodellierung ein Bug eingeschlichen, der auf ein falsches Regelverständnis zurückzuführen ist. =moves-from-cell= schaut sich lediglich die unmittelbaren Nachbarfelder eines Feldes an, von dem aus ein Zug stattfinden soll, und filtert anschließend die ungültigen Züge heraus. Richtig wäre, alle anderen Felder anzuschauen, auf denen ein eigener Stein steht, deren Nachbarfelder zu betrachten und anschließend die gültigen Züge zu prüfen. Eine korrekte Implementierung würde also lauten:
+
+#+BEGIN_SRC clojure
+(defn all-neighbors
+  [board cell]
+  (keep (partial neighbor board cell) directions))
+
+(defn moves-from-cell
+  "Gives us all possible moves for a cell"
+  [board from-coord player]
+  ;; remove the cell we're standing on
+  (let [board' (assoc board (coord->idx from-coord) nil)]
+    (->>
+     board'
+     ;; get all cells which contain one of our stones
+     (keep-indexed (fn [idx cell] (when (= cell [player]) idx)))
+     ;; concatenate with all neighbors
+     (mapcat #(all-neighbors board' (idx->coord %)))
+     ;; give our possible moves a nice representation
+     (map (fn [[cell-coord cell]]
+            {:from from-coord :to cell-coord}))
+     ;; ... and keep only those that we can go to
+     (filter (fn [move]
+               (valid-move? board move player))))))
+#+END_SRC
 
 ** TODO Minimax-Algorithmus
 ** TODO Genetischer Algorithmus
