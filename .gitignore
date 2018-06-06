@@ -1,6 +1,6 @@
 # ignore generated doc files
-doc/*.pdf
-doc/*.tex
+doc/*
+!doc/*.org
 
 # ignore build artifacts
 /target
