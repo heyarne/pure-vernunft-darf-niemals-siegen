@@ -1,0 +1,33 @@
+* AI For Games: Mitschrift 18.6.2018
+** Vorher besprochen
+
+- Floyd Borshel Algorithmus (?)
+- Jump Point Algorithmus (?)
+- Wegesuche irgendwie: Graphen oder Kästchen (s.u.)
+
+** Diese Vorlesung
+*** Influence Maps / Heat Maps
+
+- Grundidee: Mehrere Pixel aus 1024-Pixel-Raster zusammenfassen (z.B. in 16x16 Pixelblöcke), Pixel dort aggregieren und den Wert nehmen
+- Problem: Ist 16x16 gute Größe? Lösung -> 512x512, 256x256, 128x128, ... bis man auf Pixelebene angekommen ist
+- Kann man als =QuadTree= speichern, braucht man aber nicht; Bsp: erste Ebene 2x2, interessant ist [0,0] -> also ist auf der nächsten Ebene mit einem 4x4-Array alles von [0-2;0-2] interessant
+- Wichtiger Aspekt: Was speichert man in unserem Fall eigentlich? Summen? Gewichtete / normierte Summen? Gibt ja auch Hindernisse
+- Problem: Wenn interessanter Punkt genau auf der Ecke von 4 Blöcken liegt, wirkt einer der Blöcke interessant aber nicht die Ecke. Lösung: Man legt die Blöcke noch mal versetzt darüber (Umrechnungsformel für Koordinaten von einem Array ins nächsthöhere: x,y * 2 + 2 * 12 (für vertikale und horizontale höhere Auflösung) + 9 (für die, die genau auf den Kanten liegen)
+- Könnte man auch statt Blöcken mit Vierecken machen
+- Aktualisierung: Am besten Faul sein; wenn sich jemand bewegt nur lokal, ansonsten bei Power-Ups
+
+**** Wie setzt man das sinnvoll ein?
+
+- Nicht nur nach Maximum suchen, ist evtl. weit entfernt
+- Lieber schauen, dass man interessante Wege nimmt; z.B. durch Kantengewichte im Graphen
+- Beste Nachbarzelle kann leider hängen bleiben, wenn man immer nur lokale Nachbarschaft anschaut
+- Bei Power-Ups: Wenn Gegner näher sind einfach lieber lassen
+
+*** Alternative Strategie
+**** Gegner ärgern
+
+- Wenn man in der Nähe ist, einfach hinterher fahren
+
+** Interessant im Dokument / Wird auch beim Turnier angesagt
+
+- Welche Strategie?

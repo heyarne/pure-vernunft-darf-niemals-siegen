@@ -1,0 +1,20 @@
+* Kooperative Wegesuche
+
+/Einstieg leider verpasst/
+
+** CA*-Algorithmus
+
+- Von David Silver (Alpha Go)
+- Wegesuche mit A*
+- Suche in diskretem Raum (top für uns)
+- Sucht in 3 dimensionen (2-dimensionaler Raum + Zeit)
+- Verschiedene Strategien, mit welcher Figur angefangen werde nsoll (HCA*, WHCA*, Co-WHCA*)
+
+*** Funktionsweise
+
+1. Räumliches Layout in Zeitebene diskutieren (Hindernisse zu jedem Zeitpunkt)
+2. Spieler sind danach "bewegliche Hindernisse" -> Jeder Schritt jedes Spielers ist ein räumlicher und ein zeitlicher Schritt
+3. Optimierung: Nicht in drei Dimensionen speichern, sondern einen Reservation-Table nehmen; für jede Zelle werden Einträge gemacht, wann ein Spieler dort ist
+4. "Mit wem anfangen" ist nicht zufriedenstellend zu beantworten
+5. Wie weit man schaut auch nicht, man sollte allerdings aufhören wegen Speichernutzung
+6. Weitere mögliche Änderung: Kosten erhöhen für diejenigen Wege, die bereits gelaufen worden sind
