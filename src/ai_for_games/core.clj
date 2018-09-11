@@ -90,6 +90,19 @@
 (defn moves-from-cell
   "Gives us all possible moves for a cell"
   [board from-coord player]
+  (->>
+   ;; get all neighbors which are not nil
+   (keep #(neighbor board from-coord %) directions)
+   ;; keep only those that we can go to
+   (filter (fn [[cell-coord cell]]
+             (valid-move? board {:from from-coord :to cell-coord} player)))
+   ;; ... and give them a nice representation
+   (map (fn [[cell-coord cell]]
+          {:from from-coord :to cell-coord}))))
+
+#_(defn moves-from-cell
+  "Gives us all possible moves for a cell"
+  [board from-coord player]
   ;; remove the cell we're standing on
   (let [board' (assoc board (coord->idx from-coord) nil)]
     (->>

@@ -4,41 +4,64 @@
 #+AUTHOR: Arne Schlüter (538145), Katharina Spangehl (548176)
 #+LANGUAGE: de-de
 #+LATEX_HEADER: \usepackage[]{babel}
+#+PROPERTY: header-args :exports both :results pp :eval never-export
 
 * Einleitung
 
-Dieser Text kommentiert und dokumentiert die Abgabe zur Übung Nummer 1 des Kurses AI for Games and Interactive Systems, geleitet von Prof. Dr. Tobias Lenz an der HTW Berlin im Sommersemester 2018.
+Dieser Text kommentiert und dokumentiert die Abgabe zur Übung Nummer 1 des Kurses AI for Games and Interactive Systems, geleitet von Prof. Dr. Tobias Lenz an der HTW Berlin im Sommersemester 2018. Er referenziert verschiedene Teile des Quellcodes und ist gedacht als begleitende Lektüre, die verschiedene Programmteile funktional erklärt und die getroffenen Entscheidungen näher erläutert.
 
-Ziel der Übung war es, einen Bot zu programmieren, der in einem vorgegebenen Spiel mit Namen Gawihs möglichst intelligente Züge auswählt und so über den Spielserver gegen andere Spiele antreten kann. Die Zugauswahl sollte mithilfe des Alpha-Beta-Algorithmus erfolgen, der eine erweiterte Version des Minimax-Algorithmus darstellt. Ferner sollte eine dynamische Verbesserung im Laufe einer Entwicklung, die einem genetischen Algorithmus folgt, implementiert werden. Weitere Informationen dazu finden sich im Kapitel [[Implementierung]].
+Ziel der Übung war es, einen Bot zu programmieren, der in einem vorgegebenen Spiel mit Namen Gawihs möglichst intelligente Züge auswählt und so über einen Spielserver gegen andere Spiele antreten kann. Die Zugauswahl sollte mithilfe des Alpha-Beta-Algorithmus erfolgen, der eine erweiterte Version des Minimax-Algorithmus darstellt. Ferner sollte eine dynamische Verbesserung im Laufe einer Entwicklung, die einem genetischen Algorithmus folgt, implementiert werden. Weitere Informationen dazu finden sich im Kapitel [[Implementierung]].
 
 Gegeben war seitens des Dozenten eine Implementierung des Spieleservers und einige Clientbibliotheken, die die Client-Server-Interaktion gestalten sollten. Diese gegebenen Bestandteile wurden als =.jar=-Dateien angeliefert und waren auf der Java Virtual Machine (JVM) auszuführen.
 
 * Wahl der Programmiersprache
 
-Die wohl interessanteste und schwerwiegendste Entscheidung, die im Zusammenhang mit dieser Abgabe gefallen ist, war die Wahl der Programmiersprache Clojure als Basis der Implementierung. Clojure ist ein moderner Lisp-Dialekt, der sich als gehostete Sprache versteht. Das bedeutet, das Clojure keine eigene Laufzeitumgebung mitbringt, sondern sozusagen als Gast in verschiedenen Umgebungen ausgeführt werden kann. Zu diesen Umgebungen gehören neben der Common Language Runtime von .NET und JavaScript VMs auch die JVM, was eine Interaktion mit den bereits gegebenen Programmbestandteile ermöglicht. Trotz einer möglichen Interaktion bietet Clojure allerdings Paradigmen, die sich von denen der Gastgeber stark unterscheiden können:
+Die wohl weitreichendste und möglicherweise interessanteste Entscheidung, die im Zusammenhang mit dieser Abgabe gefallen ist, war die Wahl der Programmiersprache Clojure. Clojure ist ein moderner Lisp-Dialekt, der sich als gehostete Sprache versteht. Das bedeutet, das Clojure keine eigene Laufzeitumgebung mitbringt, sondern sozusagen als Gast in verschiedenen Umgebungen ausgeführt werden kann. Zu diesen Umgebungen gehören neben der Common Language Runtime von .NET und JavaScript VMs auch die JVM, was eine Interaktion mit bereits gegebenen Programmbestandteilen ermöglicht. Trotz einer möglichen Interaktion bietet Clojure allerdings Paradigmen, die sich von denen der Gastgeber stark unterscheiden können:
 
 Eine üblicherweise im Zusammenhang mit LISP-Dialekten genannte Herangehensweise an Entwicklung heißt /REPL Driven Development/. Typischerweise startet man zu Beginn des Entwicklungsprozesses einen Read Eval Print Loop (REPL), an den laufend Programmteile zur Ausführung geschickt werden, um deren Ergebnisse angezeigt zu bekommen und eigene Annahmen so zu belegen oder zu widerlegen. Eine REPL für derartige Sprachen ist häufig über Plugins gut in den verwendeten Texteditor integriert.
 
-Einen weiteren zentralen Bestandteil der Sprache bilden /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, anstatt die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen[fn:: Dieser Codeblock zeigt eine Interaktion mit einer Clojure REPL. Als Konvention wird jeder Ausdruck einzeln ausgeführt. Mit =;; =>= beginnende Zeilen symbolisieren das Ergebnis einer ausgeführten Instruktion.]:
+Einen weiteren zentralen Bestandteil der Sprache bilden /Functional Persistent Immutable Data Structures/. Die Idee geht unter anderem zurück auf das Paper [[http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf][Purely Functional Persistent Data Structures (Okasaki, 1996)]] und beschreibt Datenstrukturen, die bei Veränderung eine neue Version ihrer selbst zurückgeben, anstatt die alte Version zu zerstören. Anhand eines Beispiels lässt sich das folgendermaßen verdeutlichen[fn:: Dieser Codeblock zeigt eine Interaktion mit einer Clojure REPL. Als Konvention wird jeder Ausdruck einzeln ausgeführt. Mit =;;=>= beginnende Zeilen symbolisieren das Ergebnis einer ausgeführten Instruktion.]:
 
-#+NAME: toy_repl
-#+CAPTION: Persistente Datenstrukturen
 #+BEGIN_SRC clojure
 (def example {:a 1, :b 2})
-;; => #'user/example
-example
-;; => {:a 1, :b 2}
-(dissoc example :a)
-;; => {:b 2}
-example
-;; => {:a 1, :b 2}
 #+END_SRC
 
-Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface entspricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt.
+#+RESULTS:
+: ;;=> #'ai-for-games.core/example
+
+#+BEGIN_SRC clojure
+example
+#+END_SRC
+
+#+RESULTS:
+: ;;=> {:a 1, :b 2}
+
+#+BEGIN_SRC clojure
+(dissoc example :a)
+#+END_SRC
+
+#+RESULTS:
+: ;;=> {:b 2}
+
+#+BEGIN_SRC clojure
+(assoc example :c 3)
+#+END_SRC
+
+#+RESULTS:
+: ;;=> {:a 1, :b 2, :c 3}
+
+#+BEGIN_SRC clojure
+example
+#+END_SRC
+
+#+RESULTS:
+: ;;=> {:a 1, :b 2}
+
+Zuerst wird eine Variable =example= definiert, die dem =Map=-Interface entspricht und Schlüssel auf Werte abbildet. Die Variable wird beispielhaft ausgegeben (Zeilen, die mit =;= beginnen, werden in Clojure als Kommentare interpretiert). Anschließend wird der Schlüssel =:a= mithilfe der Funktion =dissoc= aus =example= entfernt und das Ergebnis ausgegeben - der originale Wert bleibt davon jedoch unberührt. Das selbe gilt für das Hinzufügen eines neuen Key-Value-Paares mit =assoc=.
 
 Diese Datenstrukturen fördern den Aufbau eines Programms aus vielen kleinen, puren Funktionen, also Funktionen, die keine Werte außerhalb ihrer selbst verändern, sondern lediglich Berechnungen mit den eingegebenen Parametern anstellen und die Ergebnisse zurückgeben. Persistente Datenstrukturen in Clojure arbeiten mit /Structural Sharing/, das heißt bei einer Veränderung des Wertes wird ein größtmöglicher Teil des alten Wertes wiederverwendet, um Speicher zu sparen. Im Zusammenspiel mit Persistenten Datenstrukturen, die jede Wertveränderung explizit machen, ist ein Umfeld gegeben, das eine schrittweise Näherung an eine Lösung in einem vorher unbekannten Feld gangbar macht.
 
-Ein weiteres vielversprechendes Feature ist /Laziness/, die, ähnlich der Immutability, als Konzept in verschiedenen Programmiersprachen auftaucht. Der Begriff bezeichnet die Eigenschaft von Sprachen, Werte erst dann zu berechnen, wenn sie gebraucht werden. Das ermöglicht Konstrukte wie unendlich große Listen - jeder Knoten liegt erst dann im RAM, wenn nach ihm gefragt wird. Im Hinblick auf eventuell sehr große Spielbäume barg das die Hoffnung, möglichst Speicher einzusparen.
+Ein weiteres vielversprechendes Feature ist /Laziness/, die, ähnlich der Immutability, als Konzept in verschiedenen funktionalen Programmiersprachen auftaucht. Der Begriff bezeichnet die Eigenschaft von Sprachen, Werte erst dann zu berechnen, wenn sie gebraucht werden. Das ermöglicht Konstrukte wie unendlich große Listen - jeder Knoten liegt erst dann im RAM, wenn nach ihm gefragt wird, und wird vorher durch eine Funktion beschrieben, die den entsprechenden Wert produziert, wenn er gebraucht wird. Im Hinblick auf eventuell sehr große Spielbäume barg das die Hoffnung, möglichst Speicher einzusparen.
 
 #+NAME: Implementierung
 * Implementierung
@@ -46,9 +69,9 @@ Ein weiteres vielversprechendes Feature ist /Laziness/, die, ähnlich der Immuta
 
 Das Projekt wurde entwickelt mit [[https://java.com/en/download/manual.jsp][Java 1.8]], [[https://clojure.org/guides/getting_started][Clojure 1.8]] und [[https://leiningen.org/][Leiningen 2.8.1]]. Leiningen ist ein Build-Tool für Clojure, das dabei hilft, gängige Aufgaben zu automatisieren, ein Projekt zu strukturieren und Abhängigkeiten zu verwalten. Daraus ergibt sich für das vorliegende Projekt ein =src=-Ordner mit sämtlichen Modulen, die in ihrer Gesamtheit die Implementierung des Clients bilden, einen =test=-Ordner, der Unit-Tests beinhaltet und einen =resources=-Ordner, der weitere zugehörige Dateien wie Bilder und die vorgegebenen Bibliotheken enthält. Eine einfache REPL lässt sich mit dem Kommando =lein repl= starten, Tests werden mithilfe des Kommandos =lein test= ausgeführt.
 
-Testen ist in Clojure reibungslos und tief in die Sprache integriert: Die Standardbibliothek kommt mit einem simplen aber mächtigen Testing-Framework in Form von =clojure.test= und sprachbedingt bedeutet ein Test häufig nichts anderes als den Vergleich einer ad-hoc generierten oder manipulierten Datenstruktur und dem Rückgabewert einer Funktion mit einem simplen Gleichheits-Operator. Der ganze Entwicklungsprozess gestaltete sich daher als Mischung aus der Interaktion mit einer tief in den Editor integrierten REPL und kontinuierlich laufenden Tests, die bei der dynamischen Natur der Sprache etwas mehr Zuversicht schenken konnten, das laufende Annahmen über Codeverhalten weiter bestehen. Zusätzlich dazu kommunizieren die geschriebenen Tests diese Annahmen anderen Menschen gegenüber.
+Testen ist in Clojure reibungslos und tief in die Sprache integriert: Die Standardbibliothek kommt mit dem Testing-Framework =clojure.test=, dass eine kleine API hat und schnell erlernt ist. Sprachbedingt bedeutet ein Test häufig nichts anderes als den Vergleich einer ad-hoc generierten oder manipulierten Datenstruktur und dem Rückgabewert einer Funktion mit einem simplen Gleichheits-Operator. Der ganze Entwicklungsprozess gestaltete sich daher als Mischung aus der Interaktion mit einer tief in den Editor integrierten REPL und kontinuierlich laufenden Tests, die bei der dynamischen Natur der Sprache etwas mehr Zuversicht schenken konnten, das laufende Annahmen über Codeverhalten weiter bestehen. Zusätzlich dazu kommunizieren die geschriebenen Tests diese Annahmen anderen Menschen gegenüber.
 
-** TODO Modellierung des Spiels
+** Modellierung des Spiels
 
 Die Logik des Spiels befindet sich im Namespace =ai-for-games.core=[fn:: Die Ordnerstruktur folgt, ähnlich wie bei Java, den Namen der Namespaces. =ai-for-games.core= befindet sich in =src/ai_for_games/core.clj=]. Der Namespace bildet mit =test/ai_for_games/core_test.clj= den am besten getesteten.
 
@@ -56,16 +79,19 @@ Das Spielbrett ist ein multidimensionaler Vektor (=board=). Ist ein Wert im Vekt
 
 Die nächsten beiden Funktionen =on-top?= und =valid-starts= definieren bereits grundsätzliche Funktionen, die der Interaktion mit dem Brett dienen. Hier wird bereits die eingangs genannte Tendenz zum Aufbau aus vielen relativ kleinen und puren Funktionen deutlich. Alle validen Startkoordinaten eines Spielers zu Beginn des Spieles lassen sich damit in der REPL folgendermaßen abfragen:
 
+#+NAME: Valide Startkoordinaten
 #+BEGIN_SRC clojure
 (in-ns 'ai-for-games.core)
 (->> (valid-starts @board :g)
      (map idx->coord))
-  ;; => ([0 4] [1 5] [2 6] [3 7] [4 8])
 #+END_SRC
+
+#+RESULTS: Valide Startkoordinaten
+: ;;=> ([0 4] [1 5] [2 6] [3 7] [4 8])
 
 Leider hat sich in der Spielmodellierung ein Bug eingeschlichen, der auf ein falsches Regelverständnis zurückzuführen ist. =moves-from-cell= schaut sich lediglich die unmittelbaren Nachbarfelder eines Feldes an, von dem aus ein Zug stattfinden soll, und filtert anschließend die ungültigen Züge heraus. Richtig wäre, alle anderen Felder anzuschauen, auf denen ein eigener Stein steht, deren Nachbarfelder zu betrachten und anschließend die gültigen Züge zu prüfen. Eine korrekte Implementierung würde also lauten:
 
-#+BEGIN_SRC clojure
+#+BEGIN_SRC clojure :exports code
 (defn all-neighbors
   [board cell]
   (keep (partial neighbor board cell) directions))
@@ -89,10 +115,40 @@ Leider hat sich in der Spielmodellierung ein Bug eingeschlichen, der auf ein fal
                (valid-move? board move player))))))
 #+END_SRC
 
-** TODO Minimax-Algorithmus
-** TODO Genetischer Algorithmus
-* TODO Fazit
+Die restlichen Funktionen =all-moves=, =apply-move= und =disqualify= fallen relativ kurz aus. =all-moves= führt die oben definierte Funktion, die alle Züge von einer Zelle ausgibt, für jede Zelle aus, von der ein Spieler aus ziehen kann. =apply-move= verändert das Spielfeld, indem es einen Zug ausführt, und =disqualify=  entfernt einen Spieler aus dem Spiel.
 
-- Man braucht einen Editor, der mit Clojure umgehen kann (strukturelles editieren & REPL-Integration)
-- Paradigmen machen Interop teilweise schwer
-- Sehr kompakte Sprache; insgesamt 524 Zeilen Sourcecode (mit Docstrings), wovon mehr als 1/4 (160) auf Tests anfällt
+In den beschriebenen Funktionen wird deutlich, was weiter oben bereits angedeutet wurde: Das Programm setzt sich zusammen aus relativ kleinen und übersichtlichen Funktionen, die bis auf ihre Parameter wenig von der Außenwelt wissen müssen. Durch das Aufsplitten der Logik in kleine funktionale Bestandteile lassen sich einerseits Teile relativ problemlos austauschen, ohne dass man sich Sorgen machen muss, an anderer Stelle Bugs einzuführen, vorausgesetzt man kann akzeptiert dieselben Parameter und gibt die selbe Art von Ergebnis wieder. Weiter ergibt sich die Möglichkeit der Komposition: Alle möglichen Züge ist die wiederholte Ausführung jedes Zugs von einer Zelle für jede mögliche Startzelle. Ein anderer positiver Aspekt ist die Testbarkeit. Im Namespace =ai-for-games.core-test= (zu finden unter =/test/ai_for_games/core_test.clj=) kann man sehen, dass wir das Spiel und deren Regeln komplett in Datenstrukturen beschrieben haben, ohne auf Sideeffects wie die Konsolenausgabe des Servers angewiesen zu sein. Wir konnten so große Teile der Logik testgetrieben entwickeln.
+
+** Minimax-Algorithmus
+
+Der Minimax-Algorithmus ist im Namespace =ai-for-games.minixmax= umgesetzt. Der Namespace enthält Code zur Erstellung eines Spielbaumes und der Auswahl eines vorteilhaften Weges durch diesen Spielbaum, um den nächsten Zug auszuwählen. Die Struktur des Baumes ist in einem Kommentar in der Datei visualisiert:
+
+#+BEGIN_SRC clojure :noexport
+{:board b
+ :player p
+ :next [{:board b'
+         :player p+1
+         :next [,,,]},
+         ,,,]}
+#+END_SRC
+
+Jede Runde ist also definiert durch den momentanen Status des Bretts, die Farbe, die gerade am Zug ist, und die möglichen Zustände in der nächsten Runde. Die Funktion =game-tree= ist dafür verantwortlich, diesen Spielbaum rekursiv aufzubauen. Während es sehr verschwenderisch erscheint, für jeden möglichen Zug viele verschiedene Versionen des Bretts im Speicher zu halten, sind die persistenten Datenstrukturen in Clojure so implementiert, das unterschiedliche Versionen der selben Datenstruktur so viel wie Möglich ihrer Struktur teilen (sog. /Structural Sharing/). Sieht also im Spielfeld-Vektor ein Feld anders aus, so muss lediglich dieses Feld extra im Speicher abgelegt werden.
+
+Die Funktion =minimax= ist dafür verantwortlich, den vorteilhaftesten Knoten im Spielbaum zu finden. Dazu wird, wenn es Unterknoten gibt, der höchste Score aus den Unterknoten genommen. Wenn es keine Unterknoten gibt sind wir am Ende des Baumes angekommen und bewerten das Feld mithilfe der Funktion =score=.[fn::Um den Speicherverbrauch weiter zu optimieren und voll und ganz die Vorteile der lazy evaluation zu nutzen hätte man sämtliche nächsten Züge verwerfen können, sobald man den höchsten Score erfahren hat.]
+
+Die Bewertungsfunktion =score= gibt eine Gleitkommazahl zwischen $-\infty$ und $+\infty$ zurück. Abhängig von der Farbe, die momentan am Zug ist, repräsentiert die beiden Werte respektive die eigene Niederlage oder den eigenen Sieg; Werte dazwischen errechnen sich aus der Summe verschiedener Strategien. Da wir uns sicher sein können, dass die Werte, die wir zur Berechnung brauchen, weder von den Bewertungsfunktionen noch an anderer Stelle im Code verändert werden, können wir die Berechnung mithilfe der Funktion =pvalues= parallelisieren und summieren anschließend die Ergebnisse. Die Summanden können gewichtet werden, indem zur Laufzeit den mit =^:dynamic= gekennzeichneten Variablen andere Werte zugewiesen werden.[fn::Per Konvention werden in Clojure Variablennamen, die veränderbare Werte repräsentieren, von Asterisken eingegrenzt (sog. /Earmuffs/).] So lässt sich die Strategie einer künstlichen Intelligenz verändern.
+
+** Genetischer Algorithmus
+
+Während Ansätze eines genetischen Algorithmus in verschiedenen Stellen im Code zu finden sind, fehlt die Implementierung in unserer Abgabe leider. Ein Grund dafür war mangelnde Sprachkenntnis, die viele Prozesse länger gestaltet hat, als erwartet. Nach einigen Monaten mit der Sprache konnte jedoch eine Version implementiert werden, die einen genetischen Algorithmus in weniger als 90 Zeilen Code implementiert.
+
+Hierzu wurde eine Datenstruktur eingeführt, die Spieler durch eine Farbe und die drei Faktoren der Scoring-Funktion repräsentiert. Die =fitness=-Funktion besteht aus einem Loop, der das Spielfeld initialisiert und die verschiedenen Spieler gegeneinander antreten lässt; schließlich wird eine =Map= zurückgegeben, die für jeden Spieler die Anzahl der gemachten Züge zurückgibt. Die Reproduktion, also das Erzeugen einer neuen Generation, wählt diejenigen Spieler, deren Züge sich im Bereich $max(\text{Anzahl-Züge}) * 0,9$ befinden und generiert neue Spieler, indem es deren Scoring-Faktoren zufällig kombiniert und leicht abändert. Neue Generationen, die schlechter abschneiden, als vorherige, werden verworfen.
+
+Diesen Prozess kann man $n$ mal wiederholen, um das Programm autonom gute Faktoren finden zu lassen. Insbesondere interessant ist hierbei, dass durch die Modellierung des gesamten Spiels als Datenstruktur und seiner Regeln als Funktionen, keinerlei Server und damit auch keine Netzwerkkommunikation benötigt wird. Der gesamte Trainingsprozess kommt ohne Sideeffects aus und ist so theoretisch massiv parallelisierbar.
+
+* Fazit
+
+Zusammenfassend lässt sich sagen, dass die Wahl der Programmiersprache durchaus kritisch zu bewerten ist.
+Um eine gute Entwicklungsumgebung zu schaffen benötigt man einen Editor, der einerseits mit S-Expressions umgehen kann (also strukturelles Editieren unterstützt) und andererseits eine gute REPL-Integration ermöglicht. Ist beides gegeben und man hat sich an diese Umgebung gewöhnt ist man allerdings sehr produktiv und auch gefühlt sicher im Umgang mit dem eigenen Code, da permanent Versatzstücke evaluiert und so auf Bugs überprüft werden können.
+Während die Sprache unter anderem damit gepitcht wird, dass eine Einbindung in bestehende Java-Projekte möglich ist, ist aufgefallen, dass die unterschiedlichen Paradigmen eine solche Einbindung teilweise schwer machen. So war die Modellierung des Spiels in Form von Datenstrukturen und auf ihnen operierenden Funktionen zwar durchaus sinnvoll (s. [[Genetischer Algorithmus]]), aber auch aufwändig.
+Der erste Eindruck der Syntax verschwindet schnell und man findet sich bald gut im Quellcode zurecht. Dazu bei trägt auch die Tendenz zu sehr kompaktem Code und Funktionen, die sich auf fokussierte Aspekte der gesamten Logik konzentrieren.
